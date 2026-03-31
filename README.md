@@ -5,7 +5,7 @@ A self-hosted, open-source video and audio downloader with a clean web UI. Paste
 ![Python](https://img.shields.io/badge/python-3.8+-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-<video src="assets/preview.mp4" autoplay loop muted playsinline width="600"></video>
+https://github.com/user-attachments/assets/419d3e50-c933-444b-8cab-a9724986ba05
 
 <img src="assets/preview-mp3.png" width="600">
 
