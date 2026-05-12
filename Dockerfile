@@ -21,4 +21,4 @@ USER reclip
 
 EXPOSE 8899
 
-CMD ["gunicorn", "-b", "0.0.0.0:8899", "-w", "2", "--timeout", "600", "app:app"]
+CMD ["gunicorn", "-b", "0.0.0.0:8899", "-w", "1", "--threads", "4", "--timeout", "600", "--access-logfile", "-", "app:app"]

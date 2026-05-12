@@ -6,5 +6,8 @@ services:
     ports:
       - "8899:8899"
     volumes:
-      - ./downloads:/app/downloads
+      - reclip-downloads:/app/downloads
     restart: unless-stopped
+
+volumes:
+  reclip-downloads:
