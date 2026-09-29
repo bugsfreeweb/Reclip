@@ -1,163 +1,74 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReClip</title>
+<link rel="icon" href="/static/icon.ico" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  width: 100vw; height: 100vh;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  background: #f4f1eb;
-  font-family: 'DM Mono', monospace;
-  overflow: hidden;
-  transition: opacity 0.8s ease;
+:root{
+  --bg:#E8E1D0; --win:#F5F1E6; --surface:#FCFAF2; --surface2:#EFE9DA;
+  --ink:#221D14; --ink2:#6E6553; --ink3:#9C9179;
+  --line:rgba(34,29,20,.15); --line2:rgba(34,29,20,.08);
+  --accent:#C64A1E; --accent-h:#B03F15; --accent-ink:#A93D16; --accent-soft:rgba(198,74,30,.1);
+  --ok:#3F7A4A; --warn:#A66A1E;
+  --shadow:0 30px 70px -20px rgba(43,34,18,.4),0 6px 18px rgba(43,34,18,.12);
+  --grain:.05;
 }
-body.fade-out { opacity: 0; }
-
-.scene {
-  position: relative;
-  width: 200px; height: 200px;
-  margin-bottom: 30px;
+[data-theme="dark"]{
+  --bg:#0F0E0B; --win:#191712; --surface:#201D17; --surface2:#28241C;
+  --ink:#EFE8D8; --ink2:#A79D89; --ink3:#6F6756;
+  --line:rgba(239,232,216,.17); --line2:rgba(239,232,216,.08);
+  --accent:#DF622C; --accent-h:#EB7038; --accent-ink:#EF7C43; --accent-soft:rgba(223,98,44,.14);
+  --ok:#7DBB8C; --warn:#D9A552;
+  --shadow:0 30px 80px -14px rgba(0,0,0,.75),0 6px 20px rgba(0,0,0,.5);
+  --grain:.07;
 }
-
-.plate {
-  position: absolute;
-  bottom: 20px; left: 50%;
-  transform: translateX(-50%);
-  width: 140px; height: 20px;
-  background: #fff;
-  border-radius: 50%;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-  animation: plateIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-@keyframes plateIn {
-  from { transform: translateX(-50%) scale(0); opacity: 0; }
-  to { transform: translateX(-50%) scale(1); opacity: 1; }
-}
-
-.food {
-  position: absolute;
-  bottom: 40px; left: 50%;
-  transform: translateX(-50%);
-  font-size: 40px;
-  opacity: 0;
-  animation: foodDrop 1.5s ease-in-out infinite;
-}
-.food:nth-child(2) { animation-delay: 0.3s; font-size: 35px; }
-.food:nth-child(3) { animation-delay: 0.6s; font-size: 38px; }
-.food:nth-child(4) { animation-delay: 0.9s; font-size: 32px; }
-.food:nth-child(5) { animation-delay: 1.2s; font-size: 36px; }
-
-@keyframes foodDrop {
-  0% { opacity: 0; transform: translateX(-50%) translateY(-80px) rotate(0deg); }
-  20% { opacity: 1; transform: translateX(-50%) translateY(0) rotate(10deg); }
-  40% { transform: translateX(-50%) translateY(-10px) rotate(-5deg); }
-  60% { transform: translateX(-50%) translateY(0) rotate(0deg); }
-  80% { opacity: 1; }
-  100% { opacity: 0; transform: translateX(-50%) translateY(20px); }
-}
-
-.download-icon {
-  position: absolute;
-  top: 10px; left: 50%;
-  transform: translateX(-50%);
-  width: 50px; height: 50px;
-  opacity: 0;
-  animation: downloadPulse 1.5s ease-in-out infinite;
-}
-@keyframes downloadPulse {
-  0%, 100% { opacity: 0; transform: translateX(-50%) scale(0.8); }
-  50% { opacity: 1; transform: translateX(-50%) scale(1); }
-}
-
-.arrow {
-  position: absolute;
-  top: 0; left: 50%;
-  transform: translateX(-50%);
-  width: 3px; height: 30px;
-  background: #e85d2a;
-  border-radius: 2px;
-  animation: arrowDown 1.5s ease-in-out infinite;
-}
-@keyframes arrowDown {
-  0% { opacity: 0; height: 0; }
-  50% { opacity: 1; height: 30px; }
-  100% { opacity: 0; height: 30px; }
-}
-
-.logo {
-  font-family: 'Instrument Serif', serif;
-  font-size: 3.5rem;
-  font-weight: 400;
-  letter-spacing: -0.03em;
-  color: #3a3a38;
-  margin-bottom: 8px;
-}
-.logo em { font-style: italic; color: #e85d2a; }
-
-.tagline {
-  font-size: 0.7rem;
-  color: #9c9889;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  opacity: 0;
-  animation: fadeIn 0.5s ease 0.5s forwards;
-}
-@keyframes fadeIn {
-  to { opacity: 1; }
-}
-
-.dots {
-  display: flex;
-  gap: 6px;
-  margin-top: 20px;
-}
-.dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: #e85d2a;
-  animation: dotBounce 1.4s ease-in-out infinite;
-}
-.dot:nth-child(2) { animation-delay: 0.2s; }
-.dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes dotBounce {
-  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-  40% { transform: scale(1); opacity: 1; }
-}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{overflow:hidden;background:var(--win);color:var(--ink);font-family:'Bricolage Grotesque',sans-serif;-webkit-font-smoothing:antialiased;display:grid;place-items:center;transition:translate .6s cubic-bezier(.75,0,.2,1)}
+body.out{translate:0 -100%}
+.s-in{display:flex;flex-direction:column;align-items:center;gap:0;transition:translate .6s ease,opacity .5s ease}
+body.out .s-in{translate:0 -36px;opacity:0}
+.s-mark{width:78px;height:78px;color:var(--ink);animation:c-in .5s ease both}
+.flap{transform-box:view-box;transform-origin:13px 25px;animation:clap 1.15s cubic-bezier(.4,0,.3,1) .25s both}
+@keyframes clap{0%{transform:rotate(-26deg)}40%{transform:rotate(-26deg)}60%{transform:rotate(5deg)}74%{transform:rotate(-2deg)}84%,100%{transform:rotate(0)}}
+.s-word{font:800 34px 'Bricolage Grotesque';letter-spacing:-.02em;margin-top:14px}
+.s-word span{color:var(--accent-ink)}
+.s-word l{display:inline-block;animation:let .45s cubic-bezier(.2,1.2,.4,1) both;animation-delay:calc(.5s + var(--i)*.04s)}
+@keyframes let{from{opacity:0;transform:translateY(14px)}}
+.s-line{width:46px;height:2.5px;background:var(--accent);border-radius:99px;margin-top:10px;transform:scaleX(0);animation:lin .5s cubic-bezier(.3,1,.4,1) 1.05s forwards}
+@keyframes lin{to{transform:scaleX(1)}}
+.s-sub{font:600 9px 'IBM Plex Mono',monospace;letter-spacing:.26em;color:var(--ink3);margin-top:14px;animation:c-in .5s 1.25s ease both}
+.s-credit{font:500 9px 'IBM Plex Mono',monospace;letter-spacing:.14em;color:var(--ink3);margin-top:20px;animation:c-in .5s 1.45s ease both}
+@keyframes c-in{from{opacity:0;transform:translateY(9px)}}
+#grain{position:fixed;inset:0;z-index:300;pointer-events:none;opacity:var(--grain);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E")}
 </style>
 </head>
 <body>
-  <div class="scene">
-    <div class="download-icon">
-      <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#e85d2a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-        <polyline points="7 10 12 15 17 10"/>
-        <line x1="12" y1="15" x2="12" y2="3"/>
-      </svg>
-    </div>
-    <div class="arrow"></div>
-    <div class="food">&#x1F354;</div>
-    <div class="food">&#x1F35F;</div>
-    <div class="food">&#x1F355;</div>
-    <div class="food">&#x1F32E;</div>
-    <div class="food">&#x1F372;</div>
-    <div class="plate"></div>
-  </div>
-
-  <div class="logo">Re<em>Clip</em></div>
-  <div class="tagline">Free media downloader</div>
-
-  <div class="dots">
-    <div class="dot"></div>
-    <div class="dot"></div>
-    <div class="dot"></div>
-  </div>
-
+<div class="s-in">
+  <svg class="s-mark" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+    <g class="flap">
+      <rect x="9" y="10" width="46" height="15" rx="4.5" stroke="currentColor" stroke-width="3"/>
+      <path d="M19 11.5 25 24M31 11.5 37 24M43 11.5 49 24" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>
+    </g>
+    <rect x="9" y="29" width="46" height="25" rx="4.5" stroke="currentColor" stroke-width="3"/>
+    <path d="M27 36.5v10l9-5z" fill="var(--accent)"/>
+  </svg>
+  <div class="s-word"><l style="--i:0">R</l><l style="--i:1">e</l><l style="--i:2">C</l><l style="--i:3">l</l><l style="--i:4">i</l><l style="--i:5">p</l></div>
+  <div class="s-line"></div>
+  <div class="s-sub">SELF-HOSTED DOWNLOADER · V1.1.0</div>
+  <div class="s-credit">RECLIP (INSPIRED PROJECT) · ORGANIZED BY BUGSFREE STUDIO</div>
+</div>
+<div id="grain"></div>
 <script>
 setTimeout(() => {
-  document.body.classList.add('fade-out');
-  setTimeout(() => { window.location.href = '/'; }, 800);
-}, 3000);
+  document.body.classList.add('out');
+  setTimeout(() => { window.location.href = '/'; }, 700);
+}, 2500);
 </script>
 </body>
 </html>
