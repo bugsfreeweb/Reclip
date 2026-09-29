@@ -20,6 +20,14 @@
       --error: #c43d3d;
       --radius: 14px;
       --shimmer: linear-gradient(90deg, #ebe8e2 25%, #f0ede7 50%, #ebe8e2 75%);
+      --header-bg: rgba(244, 241, 235, 0.95);
+      --input-bg: #fff;
+      --input-border: #e2ded6;
+      --panel-bg: #fff;
+      --panel-border: #e2ded6;
+      --toggle-bg: #e2ded6;
+      --toast-bg: #3a3a38;
+      --toast-fg: #f4f1eb;
     }
     [data-theme="dark"] {
       --bg: #0a0a0f;
@@ -32,16 +40,29 @@
       --success: #00cec9;
       --error: #ff7675;
       --shimmer: linear-gradient(90deg, #1a1a2e 25%, #1e1e3a 50%, #1a1a2e 75%);
+      --header-bg: rgba(10, 10, 15, 0.95);
+      --input-bg: #16162a;
+      --input-border: #2a2a4a;
+      --panel-bg: #16162a;
+      --panel-border: #2a2a4a;
+      --toggle-bg: #2a2a4a;
+      --toast-bg: #e8e8f0;
+      --toast-fg: #0a0a0f;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
 
     body {
       font-family: 'DM Mono', monospace;
       background: var(--bg);
       color: var(--fg);
-      min-height: 100vh;
-      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
     }
 
     body::after {
@@ -52,26 +73,29 @@
       pointer-events: none;
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
       background-size: 128px;
-    }
-
-    .page {
-      max-width: 620px;
-      margin: 0 auto;
-      padding: 60px 24px 80px;
-      position: relative;
-      z-index: 1;
+      z-index: 0;
     }
 
     .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      background: var(--header-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 16px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 48px;
+      flex-shrink: 0;
     }
 
     .brand h1 {
       font-family: 'Instrument Serif', serif;
-      font-size: 4.2rem;
+      font-size: 2rem;
       font-weight: 400;
       letter-spacing: -0.03em;
       line-height: 1;
@@ -79,8 +103,8 @@
     }
     .brand h1 em { font-style: italic; color: var(--accent); }
     .brand p {
-      margin-top: 10px;
-      font-size: 0.78rem;
+      margin-top: 4px;
+      font-size: 0.65rem;
       color: var(--muted);
       letter-spacing: 0.04em;
       text-transform: uppercase;
@@ -101,12 +125,25 @@
     }
     .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
 
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 100px 24px 80px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .page {
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
     textarea {
       width: 100%;
       padding: 18px 20px;
-      border: 1.5px solid var(--card-border);
+      border: 1.5px solid var(--input-border);
       border-radius: var(--radius);
-      background: var(--card);
+      background: var(--input-bg);
       color: var(--fg);
       font-family: 'DM Mono', monospace;
       font-size: 0.88rem;
@@ -119,6 +156,9 @@
     textarea:focus {
       border-color: var(--accent);
       box-shadow: 0 0 0 3px rgba(232, 93, 42, 0.08);
+    }
+    [data-theme="dark"] textarea:focus {
+      box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.15);
     }
     textarea::placeholder { color: var(--muted); }
 
@@ -265,7 +305,7 @@
       letter-spacing: 0.03em;
       text-transform: uppercase;
     }
-    .card-dl-btn:hover { background: #2d2d2a; }
+    .card-dl-btn:hover { opacity: 0.85; }
     .card-dl-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .card-dl-btn.done { background: var(--success); color: #fff; }
     .card-dl-btn.error { background: var(--error); color: #fff; }
@@ -287,6 +327,7 @@
       transition: all 0.2s;
     }
     .q-chip.active { border-color: var(--fg); color: var(--fg); background: rgba(26,26,24,0.04); }
+    [data-theme="dark"] .q-chip.active { background: rgba(255,255,255,0.06); }
     .q-chip:hover:not(.active) { border-color: var(--muted); }
 
     .progress-container { margin-top: 10px; display: none; }
@@ -323,6 +364,7 @@
     .progress-eta { color: var(--accent); }
 
     .card.card-error { border-color: rgba(196, 61, 61, 0.2); background: rgba(196, 61, 61, 0.03); }
+    [data-theme="dark"] .card.card-error { background: rgba(255, 118, 117, 0.05); }
     .card-error-icon {
       width: 100%; height: 100%;
       display: flex; align-items: center; justify-content: center;
@@ -343,7 +385,7 @@
       cursor: pointer; transition: all 0.2s;
       letter-spacing: 0.04em; text-transform: uppercase;
     }
-    .dl-all-btn:hover { background: #2d2d2a; }
+    .dl-all-btn:hover { opacity: 0.85; }
     .dl-all-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
     .spin {
@@ -358,13 +400,23 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     .footer {
-      margin-top: 48px;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      background: var(--header-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid var(--card-border);
+      padding: 12px 24px;
       text-align: center;
-      font-size: 0.68rem;
+      font-size: 0.65rem;
       color: var(--muted);
       letter-spacing: 0.05em;
       text-transform: uppercase;
       line-height: 1.8;
+      flex-shrink: 0;
     }
 
     .panel-overlay {
@@ -379,20 +431,20 @@
       position: fixed;
       top: 0; right: -380px;
       width: 360px; height: 100vh;
-      background: var(--card);
-      border-left: 1.5px solid var(--card-border);
+      background: var(--panel-bg);
+      border-left: 1.5px solid var(--panel-border);
       z-index: 101;
       transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex; flex-direction: column;
     }
     .panel.active { right: 0; }
-    .panel-left { right: auto; left: -380px; border-left: none; border-right: 1.5px solid var(--card-border); }
+    .panel-left { right: auto; left: -380px; border-left: none; border-right: 1.5px solid var(--panel-border); }
     .panel-left.active { left: 0; }
 
     .panel-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 20px;
-      border-bottom: 1.5px solid var(--card-border);
+      border-bottom: 1.5px solid var(--panel-border);
     }
     .panel-title { font-family: 'Instrument Serif', serif; font-size: 1.3rem; }
     .panel-close {
@@ -428,11 +480,12 @@
     .toggle {
       width: 40px; height: 22px;
       border-radius: 11px;
-      background: var(--card-border);
+      background: var(--toggle-bg);
       border: none;
       cursor: pointer;
       position: relative;
       transition: all 0.25s;
+      flex-shrink: 0;
     }
     .toggle.active { background: var(--accent); }
     .toggle::after {
@@ -445,6 +498,16 @@
       transition: all 0.25s;
     }
     .toggle.active::after { left: 20px; }
+
+    select {
+      background: var(--bg);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 4px 8px;
+      color: var(--fg);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+    }
 
     .history-item {
       display: flex; align-items: center; gap: 10px;
@@ -510,9 +573,9 @@
     .modal {
       width: 90%; max-width: 700px;
       max-height: 85vh;
-      background: var(--card);
+      background: var(--panel-bg);
       border-radius: var(--radius);
-      border: 1.5px solid var(--card-border);
+      border: 1.5px solid var(--panel-border);
       overflow: hidden;
       display: flex; flex-direction: column;
       animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -524,7 +587,7 @@
     .modal-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 14px 18px;
-      border-bottom: 1.5px solid var(--card-border);
+      border-bottom: 1.5px solid var(--panel-border);
     }
     .modal-title { font-family: 'Instrument Serif', serif; font-size: 1.1rem; }
     .modal-close {
@@ -538,20 +601,22 @@
 
     .toast {
       position: fixed;
-      bottom: 24px; left: 50%;
+      bottom: 60px; left: 50%;
       transform: translateX(-50%) translateY(100px);
-      background: var(--fg); color: var(--bg);
+      background: var(--toast-bg); color: var(--toast-fg);
       border-radius: 10px;
       padding: 10px 20px;
       font-size: 0.78rem;
       z-index: 300;
       transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      white-space: nowrap;
     }
     .toast.show { transform: translateX(-50%) translateY(0); }
 
     @media (max-width: 500px) {
-      .brand h1 { font-size: 3rem; }
-      .page { padding: 40px 16px 60px; }
+      .header { padding: 12px 16px; }
+      .brand h1 { font-size: 1.6rem; }
+      .content { padding: 90px 16px 70px; }
       .card { flex-direction: column; gap: 10px; }
       .card-thumb { width: 100%; min-width: unset; height: 160px; }
       .card-title { white-space: normal; }
@@ -559,55 +624,58 @@
       .fetch-btn { width: 100%; }
       .panel { width: 100%; right: -100%; }
       .panel-left { left: -100%; }
+      .footer { padding: 10px 16px; font-size: 0.6rem; }
     }
   </style>
 </head>
 <body>
-  <div class="page">
-    <div class="header">
-      <div class="brand">
-        <h1>Re<em>Clip</em></h1>
-        <p>Free media downloader</p>
+  <div class="header">
+    <div class="brand">
+      <h1>Re<em>Clip</em></h1>
+      <p>Free media downloader</p>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="document.getElementById('fileInput').click()" title="Import from file">&#x1F4C2;</button>
+      <button class="icon-btn" onclick="toggleHistory()" title="History">&#x23F0;</button>
+      <button class="icon-btn" onclick="toggleSettings()" title="Settings">&#x2699;</button>
+    </div>
+    <input type="file" id="fileInput" accept=".txt" style="display:none" onchange="importFile(event)">
+  </div>
+
+  <div class="content">
+    <div class="page">
+      <textarea id="urls" placeholder="Paste one or more URLs..." rows="2"></textarea>
+      <p class="hint">Multiple links? Separate with spaces, commas, or newlines.</p>
+
+      <div class="controls">
+        <div class="pill-group">
+          <button class="pill active" data-format="video" onclick="setFormat(this)">MP4</button>
+          <button class="pill" data-format="audio" onclick="setFormat(this)">MP3</button>
+        </div>
+        <button class="fetch-btn" id="goBtn" onclick="go()">Fetch</button>
       </div>
-      <div class="header-actions">
-        <button class="icon-btn" onclick="document.getElementById('fileInput').click()" title="Import from file">&#x1F4C2;</button>
-        <button class="icon-btn" onclick="toggleHistory()" title="History">&#x23F0;</button>
-        <button class="icon-btn" onclick="toggleSettings()" title="Settings">&#x2699;</button>
+
+      <div class="controls" style="margin-top:8px">
+        <div class="pill-group">
+          <button class="pill" id="subtitlesBtn" onclick="toggleSubtitles()">Subtitles</button>
+          <button class="pill" id="trimBtn" onclick="toggleTrim()">Trim</button>
+        </div>
       </div>
-      <input type="file" id="fileInput" accept=".txt" style="display:none" onchange="importFile(event)">
-    </div>
 
-    <textarea id="urls" placeholder="Paste one or more URLs..." rows="2"></textarea>
-    <p class="hint">Multiple links? Separate with spaces, commas, or newlines.</p>
-
-    <div class="controls">
-      <div class="pill-group">
-        <button class="pill active" data-format="video" onclick="setFormat(this)">MP4</button>
-        <button class="pill" data-format="audio" onclick="setFormat(this)">MP3</button>
+      <div class="controls" id="trimControls" style="margin-top:8px;display:none;gap:8px">
+        <input type="text" id="trimStart" placeholder="Start (sec)" style="flex:1;padding:8px 12px;border:1.5px solid var(--card-border);border-radius:8px;background:var(--card);color:var(--fg);font-family:DM Mono,monospace;font-size:0.75rem;outline:none">
+        <input type="text" id="trimEnd" placeholder="End (sec)" style="flex:1;padding:8px 12px;border:1.5px solid var(--card-border);border-radius:8px;background:var(--card);color:var(--fg);font-family:DM Mono,monospace;font-size:0.75rem;outline:none">
       </div>
-      <button class="fetch-btn" id="goBtn" onclick="go()">Fetch</button>
-    </div>
 
-    <div class="controls" style="margin-top:8px">
-      <div class="pill-group">
-        <button class="pill" id="subtitlesBtn" onclick="toggleSubtitles()">Subtitles</button>
-        <button class="pill" id="trimBtn" onclick="toggleTrim()">Trim</button>
-      </div>
+      <div id="cards" class="cards"></div>
     </div>
+  </div>
 
-    <div class="controls" id="trimControls" style="margin-top:8px;display:none;gap:8px">
-      <input type="text" id="trimStart" placeholder="Start (sec)" style="flex:1;padding:8px 12px;border:1.5px solid var(--card-border);border-radius:8px;background:var(--card);color:var(--fg);font-family:DM Mono,monospace;font-size:0.75rem;outline:none">
-      <input type="text" id="trimEnd" placeholder="End (sec)" style="flex:1;padding:8px 12px;border:1.5px solid var(--card-border);border-radius:8px;background:var(--card);color:var(--fg);font-family:DM Mono,monospace;font-size:0.75rem;outline:none">
-    </div>
-
-    <div id="cards" class="cards"></div>
-
-    <div class="footer">
-      YouTube &middot; TikTok &middot; Instagram &middot; Twitter/X &middot; Reddit &middot; Facebook<br>
-      Vimeo &middot; Twitch &middot; Dailymotion &middot; SoundCloud &middot; Loom &middot; Streamable<br>
-      Pinterest &middot; Tumblr &middot; Threads &middot; LinkedIn &middot; 1000+ more<br><br>
-      Project: ReClip (Custom) &middot; Organized by Bugsfree Studio
-    </div>
+  <div class="footer">
+    YouTube &middot; TikTok &middot; Instagram &middot; Twitter/X &middot; Reddit &middot; Facebook<br>
+    Vimeo &middot; Twitch &middot; Dailymotion &middot; SoundCloud &middot; Loom &middot; Streamable<br>
+    Pinterest &middot; Tumblr &middot; Threads &middot; LinkedIn &middot; 1000+ more<br>
+    Project: ReClip (Custom) &middot; Organized by Bugsfree Studio &middot; v1.1.0
   </div>
 
   <div class="panel-overlay" id="panelOverlay" onclick="closePanels()"></div>
@@ -626,13 +694,6 @@
         </div>
       </div>
       <div class="settings-group">
-        <div class="settings-label">History</div>
-        <div class="settings-item">
-          <span class="settings-item-label">Save download history</span>
-          <div class="toggle active" id="toggleHistory" onclick="toggleSetting('history')"></div>
-        </div>
-      </div>
-      <div class="settings-group">
         <div class="settings-label">Appearance</div>
         <div class="settings-item">
           <span class="settings-item-label">Dark theme</span>
@@ -643,7 +704,7 @@
         <div class="settings-label">Format Presets</div>
         <div class="settings-item">
           <span class="settings-item-label">Default quality</span>
-          <select id="presetQuality" onchange="savePreset()" style="background:var(--bg);border:1px solid var(--card-border);border-radius:6px;padding:4px 8px;color:var(--fg);font-family:DM Mono,monospace;font-size:0.75rem">
+          <select id="presetQuality" onchange="savePreset()">
             <option value="best">Best</option>
             <option value="1080">1080p</option>
             <option value="720">720p</option>
@@ -652,10 +713,17 @@
         </div>
       </div>
       <div class="settings-group">
+        <div class="settings-label">History</div>
+        <div class="settings-item">
+          <span class="settings-item-label">Save download history</span>
+          <div class="toggle active" id="toggleHistory" onclick="toggleSetting('history')"></div>
+        </div>
+      </div>
+      <div class="settings-group">
         <div class="settings-label">About</div>
         <div class="settings-item">
           <span class="settings-item-label">Version</span>
-          <span style="font-size:0.75rem;color:var(--muted)">1.0.0</span>
+          <span style="font-size:0.75rem;color:var(--muted)">1.1.0</span>
         </div>
       </div>
     </div>
@@ -1183,13 +1251,6 @@
       document.getElementById('settingsPanel').classList.remove('active');
       document.getElementById('historyPanel').classList.remove('active');
       document.getElementById('panelOverlay').classList.remove('active');
-    }
-
-    function toggleSetting(key) {
-      settings[key] = !settings[key];
-      localStorage.setItem('reclip_settings', JSON.stringify(settings));
-      const t = document.getElementById('toggle' + key.charAt(0).toUpperCase() + key.slice(1));
-      if (t) t.classList.toggle('active', settings[key]);
     }
 
     async function loadHistory() {

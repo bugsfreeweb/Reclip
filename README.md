@@ -5,12 +5,13 @@ A self-hosted, open-source video and audio downloader with a clean web UI. Paste
 ![Python](https://img.shields.io/badge/python-3.8+-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Desktop App](https://img.shields.io/badge/desktop-pyinstaller-purple)
+![Version](https://img.shields.io/badge/version-1.1.0-blue)
 
 ![ReClip](assets/preview-mp3.png)
 
 ## Desktop App
 
-A standalone desktop app is bundled as a single `ReClip.exe` (Windows). No browser needed — double-click `ReClip.bat` to launch. The exe includes yt-dlp and ffmpeg built in.
+**Version 1.1.0** — A standalone desktop app bundled as a single `ReClip.exe` (Windows). No browser needed — double-click `ReClip.bat` to launch. The exe includes yt-dlp and ffmpeg built in.
 
 ## Features
 
