@@ -174,7 +174,9 @@ body.dnd .composer{border-style:dashed;border-color:var(--accent)}
 .dl-lines{flex:1;display:flex;flex-direction:column;gap:3px;font:500 10px 'IBM Plex Mono',monospace;color:var(--ink2);min-width:0}
 .bar{position:absolute;left:14px;right:14px;bottom:8px;height:3px;border-radius:99px;background:var(--line2);overflow:hidden;opacity:0;transition:opacity .2s}
 .card.st-run .bar,.card.st-meta .bar,.card.st-proc .bar{opacity:1}
-.bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:99px}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--ok));border-radius:99px;transition:width .3s ease;position:relative;overflow:hidden}
+.bar i::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);animation:shimmer 1.2s infinite}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
 .card.st-meta .bar i,.card.st-proc .bar i{width:30%;animation:ind 1.1s ease-in-out infinite}
 @keyframes ind{0%{transform:translateX(-110%)}100%{transform:translateX(370%)}}
 .card.skel{border-style:dashed}
@@ -699,8 +701,8 @@ function renderSide(it){
    it.$side.innerHTML=`<div class="dl-wrap"><span class="dl-q">QUEUED</span><button class="icon-btn sm" data-act="cancel" title="Cancel"><i data-lucide="x"></i></button></div>`;
   }else if(it.state==='meta'){
    it.$side.innerHTML=`<div class="dl-wrap"><span class="dl-pct"><i data-lucide="loader-circle" class="spin"></i></span><div class="dl-lines"><span>Fetching metadata…</span><span class="mono">yt-dlp</span></div></div>`;
-  }else if(it.state==='run'){
-   it.$side.innerHTML=`<div class="dl-wrap"><span class="dl-pct">0%</span><div class="dl-lines"><span class="l1">0.0 / ${fmtSize(it.total)}</span><span class="l2">— MB/s · ETA —</span></div><button class="icon-btn sm" data-act="cancel" title="Cancel"><i data-lucide="x"></i></button></div>`;
+   }else if(it.state==='run'){
+    it.$side.innerHTML=`<div class="dl-wrap"><span class="dl-pct" data-pct>0%</span><div class="dl-lines"><span class="l1" data-l1>0.0 / ${fmtSize(it.total)}</span><span class="l2" data-l2>— MB/s · ETA —</span></div><button class="icon-btn sm" data-act="cancel" title="Cancel"><i data-lucide="x"></i></button></div>`;
   }else if(it.state==='proc'){
    it.$side.innerHTML=`<div class="dl-wrap"><span class="dl-pct"><i data-lucide="loader-circle" class="spin"></i></span><div class="dl-lines"><span>${it.fmt==='mp3'?'Extracting audio':'Merging tracks'} · ffmpeg</span><span>${fmtSize(it.total)}</span></div></div>`;
   }else if(it.state==='done'){
@@ -811,7 +813,13 @@ function pollDownload(it){
       }else if(data.progress){
         const p=data.progress;
         if(p.total>0){it.bytes=p.downloaded;it.total=p.total;it.sp=p.speed}
-        renderCardState(it);
+        if(it.$barI)it.$barI.style.width=(p.total>0?(p.downloaded/p.total*100):0).toFixed(1)+'%';
+        const pct=it.el&&it.el.querySelector('[data-pct]');
+        if(pct)pct.textContent=Math.floor((p.downloaded/p.total)*100)+'%';
+        const l1=it.el&&it.el.querySelector('[data-l1]');
+        if(l1)l1.textContent=`${fmtSize(p.downloaded)} / ${fmtSize(p.total)}`;
+        const l2=it.el&&it.el.querySelector('[data-l2]');
+        if(l2)l2.textContent=`${(p.speed/1048576).toFixed(1)} MB/s · ETA ${fmtDur(p.eta||0)}`;
       }
     }catch(err){clearInterval(iv);it.state='idle';renderCardState(it)}
   },500);
@@ -994,64 +1002,35 @@ function waveBars(seed){
   return out;
 }
 function openWatch(h){
-  wItem=h;wT=0;wPlay=false;muted=false;
+  wItem=h;wPlay=false;
   $('#wTitle').textContent=h.title;$('#wSite').textContent=h.site;
+  const previewUrl='/api/preview/'+(h.jobId||h.id);
   if(h.fmt!=='mp3'){
    $('#wBody').innerHTML=`
     <div class="player paused" data-p="toggle">
-      <img src="https://picsum.photos/seed/${h.seed}/960/540.jpg" alt="">
-      <button class="p-play" data-p="toggle" aria-label="Play"><i data-lucide="play"></i></button>
-      <div class="p-ctrl">
-        <button class="p-btn" data-p="toggle"><i data-lucide="play"></i></button>
-        <div class="p-track" data-p="seek"><i></i></div>
-        <span class="p-time"><span id="wT">0:00</span> / ${fmtDur(h.dur)}</span>
-        <button class="p-btn" data-p="mute"><i data-lucide="volume-2"></i></button>
-      </div>
+      <video id="wVideo" src="${previewUrl}" controls autoplay style="width:100%;height:100%;max-height:70vh;background:#000"></video>
     </div>`;
   }else{
    $('#wBody').innerHTML=`
     <div class="audio">
-      <img class="a-art" src="https://picsum.photos/seed/${h.seed}/400/400.jpg" alt="">
-      <div class="a-main">
-        <div class="a-wave" data-p="seek">${waveBars(h.seed)}</div>
-        <div class="a-row">
-          <span class="p-time" id="wT">0:00</span>
-          <div class="p-track" data-p="seek"><i></i></div>
-          <span class="p-time">${fmtDur(h.dur)}</span>
+      <div class="a-main" style="width:100%;text-align:center;padding:40px">
+        <audio id="wAudio" src="${previewUrl}" controls autoplay style="width:100%;max-width:500px"></audio>
+        <div class="a-row" style="justify-content:center;margin-top:20px">
+          <span class="p-time">${h.file||'audio'}</span>
         </div>
       </div>
     </div>`;
   }
-  $('#wPath').textContent=h.savedTo?h.savedTo+'\\'+(h.file||''):'(temporary) '+(h.file||slug(h.title)+'.'+h.fmt)+' — not saved yet';
+  $('#wPath').textContent=h.file||slug(h.title)+'.'+h.fmt;
   $('#wSave').hidden=!!h.savedTo;
-  clearInterval(wIv);wIv=setInterval(()=>{
-   if(wPlay){wT+=0.1;if(wT>=h.dur){wT=h.dur;wSetPlay(false)}}
-   wDraw();
-  },100);
   icons();openM(mWatch);
 }
-function stopPreview(){clearInterval(wIv);wIv=null}
-function wSetPlay(v){
-  wPlay=v;
-  const p=$('#mWatch .player');
-  if(p){p.classList.toggle('playing',v);p.classList.toggle('paused',!v)}
-  $$('#mWatch .p-btn[data-p="toggle"]').forEach(b=>b.innerHTML=`<i data-lucide="${v?'pause':'play'}"></i>`);
-  icons();
-}
-function wDraw(){
-  if(!wItem)return;
-  const f=wItem.dur?wT/wItem.dur:0;
-  $$('#mWatch .p-track > i').forEach(i=>i.style.width=(f*100)+'%');
-  const t=$('#wT');if(t)t.textContent=fmtDur(wT);
-  if(wItem.fmt==='mp3')$$('#mWatch .a-wave b').forEach((b,i,arr)=>b.classList.toggle('on',i/arr.length<=f));
+function stopPreview(){
+  const v=$('#wVideo');if(v)v.pause();
+  const a=$('#wAudio');if(a)a.pause();
 }
 mWatch.addEventListener('click',e=>{
   const b=e.target.closest('[data-p]');if(!b||!wItem)return;
-  const a=b.dataset.p;
-  if(a==='toggle')wSetPlay(!wPlay);
-  if(a==='mute'){muted=!muted;b.innerHTML=`<i data-lucide="${muted?'volume-x':'volume-2'}"></i>`;icons();
-   if(muted&&!mutedTold){mutedTold=true;toast('info','Silent preview — this mockup has no audio')}}
-  if(a==='seek'){const r=b.getBoundingClientRect();wT=clamp((e.clientX-r.left)/r.width,0,1)*wItem.dur;wDraw()}
 });
 $('#wSave').onclick=()=>{if(wItem){const it=wItem;stopPreview();closeM(mWatch);openSave(it)}};
 
@@ -1066,26 +1045,44 @@ function openSave(it){
 }
 $('#saveGo').onclick=async()=>{
   if(!sItem)return;
-  const name=$('#saveName').value.trim()||sItem.file,loc=$('#saveLoc').value;
+  const name=$('#saveName').value.trim()||sItem.file;
   try{
     const res=await fetch('/api/file/'+sItem.jobId);
     const blob=await res.blob();
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');a.href=url;a.download=name;a.click();
-    URL.revokeObjectURL(url);
-    sItem.savedTo=loc;sItem.file=name;
-    if(sItem.histId){const h=history.find(x=>x.id===sItem.histId);if(h){h.savedTo=loc;h.file=name;store.set('reclip.history',history);renderHistory()}}
+    if(window.showSaveFilePicker){
+      const handle=await window.showSaveFilePicker({suggestedName:name,types:[{description:sItem.fmt==='mp3'?'Audio':'Video',accept:{[sItem.fmt==='mp3'?'audio/mpeg':'video/mp4']:[sItem.fmt==='mp3'?'.mp3':'.mp4']}}]});
+      const writable=await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      sItem.savedTo=handle.name||'chosen folder';
+    }else{
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');a.href=url;a.download=name;a.click();
+      URL.revokeObjectURL(url);
+      sItem.savedTo=$('#saveLoc').value||'Downloads';
+    }
+    sItem.file=name;
+    if(sItem.histId){const h=history.find(x=>x.id===sItem.histId);if(h){h.savedTo=sItem.savedTo;h.file=name;store.set('reclip.history',history);renderHistory()}}
     renderCardState(sItem);closeM(mSave);
-    toast('ok','Saved to '+loc+'\\'+name);
-  }catch(err){toast('warn','Error saving file')}
+    toast('ok','Saved '+name);
+  }catch(err){if(err.name!=='AbortError')toast('warn','Error saving: '+err.message)}
   sItem=null;
 };
 
 const mFolder=$('#mFolder');let fSel=S.saveFolder;
-$('#btnBrowse').onclick=()=>{
-  fSel=S.saveFolder;
-  $('#fList').innerHTML=FOLDERS.map(f=>`<button class="f-row${f===fSel?' on':''}" data-f="${esc(f)}"><i data-lucide="folder"></i><span>${esc(f)}</span></button>`).join('');
-  icons();openM(mFolder);
+$('#btnBrowse').onclick=async()=>{
+  if(window.showDirectoryPicker){
+    try{
+      const handle=await window.showDirectoryPicker({mode:'readwrite'});
+      fSel=handle.name||'chosen folder';
+      S.saveFolder=fSel;saveS();syncSettingsUI();closeM(mFolder);
+      toast('ok','Save folder set — '+fSel);
+    }catch(err){if(err.name!=='AbortError')toast('warn','Folder access denied')}
+  }else{
+    fSel=S.saveFolder;
+    $('#fList').innerHTML=FOLDERS.map(f=>`<button class="f-row${f===fSel?' on':''}" data-f="${esc(f)}"><i data-lucide="folder"></i><span>${esc(f)}</span></button>`).join('');
+    icons();openM(mFolder);
+  }
 };
 $('#fList').addEventListener('click',e=>{
   const b=e.target.closest('.f-row');if(!b)return;
