@@ -12,8 +12,6 @@ A self-hosted, open-source video and audio downloader with a clean web UI. Paste
 
 A standalone desktop app is bundled as a single `ReClip.exe` (Windows). No browser needed — double-click `ReClip.bat` to launch. The exe includes yt-dlp and ffmpeg built in.
 
-![Desktop App](assets/preview-mp3.png)
-
 ## Features
 
 - Download videos from 1000+ supported sites (via [yt-dlp](https://github.com/yt-dlp/yt-dlp))
@@ -30,15 +28,22 @@ A standalone desktop app is bundled as a single `ReClip.exe` (Windows). No brows
 - Download history with re-download and clear options
 - Settings panel (save location, history toggle)
 - Right-click paste on URL input
+- **Batch import from file** — load URLs from a .txt file
+- **Auto-subtitle download** — fetch SRT/VTT subtitles alongside video
+- **Trim/clip download** — download only a time range (e.g. 0:30–2:00)
+- **Format presets** — save preferred quality/format combos
+- **Duplicate detection** — warn if URL already in history
+- **Dark/light theme toggle** — switch between warm beige and dark mode
+- **Browser extension** — one-click send URL to ReClip from any page
 
 ## Quick Start
 
 ### Desktop App (Windows)
 
 ```bash
-git clone https://github.com/averygan/reclip.git
-cd reclip
-./reclip.bat
+git clone https://github.com/bugsfreeWeb/Reclip.git
+cd Reclip
+./ReClip.bat
 ```
 
 The first run will build `dist\ReClip.exe` automatically.
@@ -47,8 +52,8 @@ The first run will build `dist\ReClip.exe` automatically.
 
 ```bash
 brew install yt-dlp ffmpeg    # or apt install ffmpeg && pip install yt-dlp
-git clone https://github.com/averygan/reclip.git
-cd reclip
+git clone https://github.com/bugsfreeWeb/Reclip.git
+cd Reclip
 ./reclip.sh
 ```
 
@@ -62,13 +67,22 @@ docker build -t reclip . && docker run -p 8899:8899 reclip
 
 ## Usage
 
-1. Paste one or more video URLs into the input box
+1. Paste one or more video URLs into the input box (or import from a .txt file)
 2. Choose **MP4** (video) or **MP3** (audio)
-3. Click **Fetch** to load video info and thumbnails
-4. Select quality/resolution if available
-5. Click **Download** on individual videos, or **Download All**
-6. After download, click **Save** to choose where to save the file
-7. Click **Watch** to preview the downloaded file
+3. Optionally enable **Subtitles** and/or **Trim** (set start/end time in seconds)
+4. Click **Fetch** to load video info and thumbnails
+5. Select quality/resolution if available
+6. Click **Download** on individual videos, or **Download All**
+7. After download, click **Save** to choose where to save the file
+8. Click **Watch** to preview the downloaded file
+
+## Browser Extension
+
+1. Open `chrome://extensions` in Chrome/Edge
+2. Enable "Developer mode"
+3. Click "Load unpacked" and select the `extension/` folder
+4. Right-click any video page → "Send to ReClip"
+5. Or click the extension icon to send the current tab URL
 
 ## Supported Sites
 

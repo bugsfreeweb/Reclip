@@ -21,6 +21,18 @@
       --radius: 14px;
       --shimmer: linear-gradient(90deg, #ebe8e2 25%, #f0ede7 50%, #ebe8e2 75%);
     }
+    [data-theme="dark"] {
+      --bg: #0a0a0f;
+      --fg: #e8e8f0;
+      --accent: #6c5ce7;
+      --accent-hover: #7c6cf0;
+      --muted: #606080;
+      --card: #16162a;
+      --card-border: #2a2a4a;
+      --success: #00cec9;
+      --error: #ff7675;
+      --shimmer: linear-gradient(90deg, #1a1a2e 25%, #1e1e3a 50%, #1a1a2e 75%);
+    }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -558,9 +570,11 @@
         <p>Free media downloader</p>
       </div>
       <div class="header-actions">
+        <button class="icon-btn" onclick="document.getElementById('fileInput').click()" title="Import from file">&#x1F4C2;</button>
         <button class="icon-btn" onclick="toggleHistory()" title="History">&#x23F0;</button>
         <button class="icon-btn" onclick="toggleSettings()" title="Settings">&#x2699;</button>
       </div>
+      <input type="file" id="fileInput" accept=".txt" style="display:none" onchange="importFile(event)">
     </div>
 
     <textarea id="urls" placeholder="Paste one or more URLs..." rows="2"></textarea>
@@ -572,6 +586,18 @@
         <button class="pill" data-format="audio" onclick="setFormat(this)">MP3</button>
       </div>
       <button class="fetch-btn" id="goBtn" onclick="go()">Fetch</button>
+    </div>
+
+    <div class="controls" style="margin-top:8px">
+      <div class="pill-group">
+        <button class="pill" id="subtitlesBtn" onclick="toggleSubtitles()">Subtitles</button>
+        <button class="pill" id="trimBtn" onclick="toggleTrim()">Trim</button>
+      </div>
+    </div>
+
+    <div class="controls" id="trimControls" style="margin-top:8px;display:none;gap:8px">
+      <input type="text" id="trimStart" placeholder="Start (sec)" style="flex:1;padding:8px 12px;border:1.5px solid var(--card-border);border-radius:8px;background:var(--card);color:var(--fg);font-family:DM Mono,monospace;font-size:0.75rem;outline:none">
+      <input type="text" id="trimEnd" placeholder="End (sec)" style="flex:1;padding:8px 12px;border:1.5px solid var(--card-border);border-radius:8px;background:var(--card);color:var(--fg);font-family:DM Mono,monospace;font-size:0.75rem;outline:none">
     </div>
 
     <div id="cards" class="cards"></div>
@@ -604,6 +630,25 @@
         <div class="settings-item">
           <span class="settings-item-label">Save download history</span>
           <div class="toggle active" id="toggleHistory" onclick="toggleSetting('history')"></div>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-label">Appearance</div>
+        <div class="settings-item">
+          <span class="settings-item-label">Dark theme</span>
+          <div class="toggle" id="toggleTheme" onclick="toggleSetting('theme')"></div>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-label">Format Presets</div>
+        <div class="settings-item">
+          <span class="settings-item-label">Default quality</span>
+          <select id="presetQuality" onchange="savePreset()" style="background:var(--bg);border:1px solid var(--card-border);border-radius:6px;padding:4px 8px;color:var(--fg);font-family:DM Mono,monospace;font-size:0.75rem">
+            <option value="best">Best</option>
+            <option value="1080">1080p</option>
+            <option value="720">720p</option>
+            <option value="480">480p</option>
+          </select>
         </div>
       </div>
       <div class="settings-group">
@@ -641,12 +686,62 @@
   <script>
     let currentFormat = 'video';
     let cardData = [];
-    let settings = JSON.parse(localStorage.getItem('reclip_settings') || '{"save":true,"history":true}');
+    let subtitlesEnabled = false;
+    let settings = JSON.parse(localStorage.getItem('reclip_settings') || '{"save":true,"history":true,"theme":"light","preset":"best"}');
+
+    if (settings.theme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
 
     function setFormat(btn) {
       document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentFormat = btn.dataset.format;
+    }
+
+    function toggleSubtitles() {
+      subtitlesEnabled = !subtitlesEnabled;
+      document.getElementById('subtitlesBtn').classList.toggle('active', subtitlesEnabled);
+    }
+
+    function toggleTrim() {
+      const el = document.getElementById('trimControls');
+      el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+      document.getElementById('trimBtn').classList.toggle('active', el.style.display === 'flex');
+    }
+
+    function importFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const text = e.target.result;
+        const ta = document.getElementById('urls');
+        ta.value = ta.value ? ta.value + '\n' + text : text;
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    function toggleSetting(key) {
+      if (key === 'theme') {
+        const current = settings.theme === 'dark' ? 'light' : 'dark';
+        settings.theme = current;
+        document.documentElement.setAttribute('data-theme', current === 'dark' ? 'dark' : '');
+        localStorage.setItem('reclip_settings', JSON.stringify(settings));
+        const t = document.getElementById('toggleTheme');
+        if (t) t.classList.toggle('active', current === 'dark');
+        return;
+      }
+      settings[key] = !settings[key];
+      localStorage.setItem('reclip_settings', JSON.stringify(settings));
+      const t = document.getElementById('toggle' + key.charAt(0).toUpperCase() + key.slice(1));
+      if (t) t.classList.toggle('active', settings[key]);
+    }
+
+    function savePreset() {
+      settings.preset = document.getElementById('presetQuality').value;
+      localStorage.setItem('reclip_settings', JSON.stringify(settings));
     }
 
     function parseUrls(text) {
@@ -738,8 +833,20 @@
     });
 
     async function go() {
-      const urls = parseUrls(document.getElementById('urls').value);
+      let urls = parseUrls(document.getElementById('urls').value);
       if (!urls.length) return;
+
+      try {
+        const res = await fetch('/api/history');
+        const data = await res.json();
+        if (data.history && data.history.length > 0) {
+          const historyUrls = data.history.map(h => h.url);
+          const duplicates = urls.filter(u => historyUrls.includes(u));
+          if (duplicates.length > 0) {
+            if (!confirm(`${duplicates.length} URL(s) already in history. Download anyway?`)) return;
+          }
+        }
+      } catch {}
 
       const btn = document.getElementById('goBtn');
       const container = document.getElementById('cards');
@@ -912,6 +1019,9 @@
       c.progress = { downloaded: 0, total: 0, speed: 0, eta: 0 };
       renderCard(idx);
 
+      const trimStart = document.getElementById('trimStart').value || null;
+      const trimEnd = document.getElementById('trimEnd').value || null;
+
       try {
         const res = await fetch('/api/download', {
           method: 'POST',
@@ -922,6 +1032,9 @@
             format_id: c.selectedFormatId,
             title: c.title || '',
             thumbnail: c.thumbnail || '',
+            trim_start: trimStart,
+            trim_end: trimEnd,
+            subtitles: subtitlesEnabled,
           }),
         });
         const data = await res.json();
@@ -1128,6 +1241,9 @@
 
     document.getElementById('toggleSave').classList.toggle('active', settings.save);
     document.getElementById('toggleHistory').classList.toggle('active', settings.history);
+    document.getElementById('toggleTheme').classList.toggle('active', settings.theme === 'dark');
+    const presetEl = document.getElementById('presetQuality');
+    if (presetEl) presetEl.value = settings.preset || 'best';
   </script>
 </body>
 </html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body { width: 280px; padding: 16px; font-family: -apple-system, sans-serif; background: #f4f1eb; color: #3a3a38; }
+h1 { font-size: 1.1rem; margin-bottom: 12px; }
+h1 em { color: #e85d2a; font-style: italic; }
+.status { padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; margin-bottom: 12px; }
+.status.ok { background: rgba(45,138,78,0.1); color: #2d8a4e; }
+.status.err { background: rgba(196,61,61,0.1); color: #c43d3d; }
+input { width: 100%; padding: 8px 12px; border: 1.5px solid #e2ded6; border-radius: 8px; font-size: 0.8rem; margin-bottom: 8px; box-sizing: border-box; }
+button { width: 100%; padding: 10px; border: none; border-radius: 8px; background: #e85d2a; color: white; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+button:hover { background: #d04e1f; }
+</style>
+</head>
+<body>
+  <h1>Re<em>Clip</em></h1>
+  <div id="status" class="status" style="display:none"></div>
+  <input type="text" id="serverUrl" placeholder="ReClip server (default: localhost:8899)" />
+  <button onclick="sendUrl()">Send to ReClip</button>
+<script>
+async function sendUrl() {
+  const status = document.getElementById('status');
+  const serverUrl = document.getElementById('serverUrl').value || 'http://localhost:8899';
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const url = tab.url;
+    if (!url.startsWith('http')) throw new Error('Not a valid URL');
+    const res = await fetch(serverUrl + '/api/history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, title: tab.title || '', thumbnail: '' }),
+    });
+    if (!res.ok) throw new Error('Server error');
+    status.className = 'status ok';
+    status.textContent = 'Sent to ReClip!';
+    status.style.display = 'block';
+  } catch (err) {
+    status.className = 'status err';
+    status.textContent = 'Error: ' + err.message;
+    status.style.display = 'block';
+  }
+}
+</script>
+</body>
+</html>

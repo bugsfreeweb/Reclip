@@ -48,7 +48,7 @@ def save_history(history):
     HISTORY_FILE.write_text(json.dumps(history, indent=2))
 
 
-def run_download(job_id, url, format_choice, format_id):
+def run_download(job_id, url, format_choice, format_id, trim_start=None, trim_end=None, subtitles=False):
     job = jobs[job_id]
     out_template = str(DOWNLOAD_DIR / f"{job_id}.%(ext)s")
 
@@ -64,6 +64,9 @@ def run_download(job_id, url, format_choice, format_id):
         format_str = "bestvideo+bestaudio/best"
         postprocessors = []
         merge_ext = "mp4"
+
+    if subtitles:
+        postprocessors.append({"key": "FFmpegEmbedSubtitle"})
 
     def progress_hook(d):
         if d["status"] == "downloading":
@@ -85,9 +88,14 @@ def run_download(job_id, url, format_choice, format_id):
         "ffmpeg_location": FFMPEG,
         "postprocessors": postprocessors,
         "progress_hooks": [progress_hook],
+        "writesubtitles": subtitles,
+        "subtitleslangs": ["en"] if subtitles else None,
+        "subtitlesformat": "srt/vtt/best",
     }
     if merge_ext:
         ydl_opts["merge_output_format"] = merge_ext
+    if trim_start and trim_end:
+        ydl_opts["download_ranges"] = [{"start_time": trim_start, "end_time": trim_end}]
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -228,6 +236,9 @@ def start_download():
     format_id = data.get("format_id")
     title = data.get("title", "")
     thumbnail = data.get("thumbnail", "")
+    trim_start = data.get("trim_start")
+    trim_end = data.get("trim_end")
+    subtitles = data.get("subtitles", False)
 
     if not url:
         return jsonify({"error": "No URL provided"}), 400
@@ -241,7 +252,7 @@ def start_download():
         "progress": {"downloaded": 0, "total": 0, "speed": 0, "eta": 0},
     }
 
-    thread = threading.Thread(target=run_download, args=(job_id, url, format_choice, format_id))
+    thread = threading.Thread(target=run_download, args=(job_id, url, format_choice, format_id, trim_start, trim_end, subtitles))
     thread.daemon = True
     thread.start()
 
