@@ -7,7 +7,7 @@ A self-hosted, open-source video and audio downloader with a clean web UI. Paste
 ![Desktop App](https://img.shields.io/badge/desktop-pyinstaller-purple)
 ![Version](https://img.shields.io/badge/version-1.1.0-blue)
 
-![ReClip](assets/preview-mp3.png)
+![ReClip Desktop App](assets/preview-mp3.png)
 
 ## Desktop App
 
@@ -36,6 +36,8 @@ A self-hosted, open-source video and audio downloader with a clean web UI. Paste
 - **Duplicate detection** — warn if URL already in history
 - **Dark/light theme toggle** — switch between warm beige and dark mode
 - **Browser extension** — one-click send URL to ReClip from any page
+- **Update checker** — check and update yt-dlp engine from settings
+- **Parallel downloads** — download multiple videos simultaneously
 
 ## Quick Start
 
@@ -70,7 +72,7 @@ docker build -t reclip . && docker run -p 8899:8899 reclip
 
 1. Paste one or more video URLs into the input box (or import from a .txt file)
 2. Choose **MP4** (video) or **MP3** (audio)
-3. Optionally enable **Subtitles** and/or **Trim** (set start/end time in seconds)
+3. Optionally enable **Subtitles** and/or **Clip** (set start/end time)
 4. Click **Fetch** to load video info and thumbnails
 5. Select quality/resolution if available
 6. Click **Download** on individual videos, or **Download All**
@@ -79,11 +81,13 @@ docker build -t reclip . && docker run -p 8899:8899 reclip
 
 ## Browser Extension
 
-1. Open `chrome://extensions` in Chrome/Edge
-2. Enable "Developer mode"
-3. Click "Load unpacked" and select the `extension/` folder
-4. Right-click any video page → "Send to ReClip"
-5. Or click the extension icon to send the current tab URL
+1. Download `assets/browser-extension.zip` from the repo or Settings → Browser Extension → Download
+2. Unzip the file
+3. Open `chrome://extensions` in Chrome/Edge
+4. Enable "Developer mode"
+5. Click "Load unpacked" and select the unzipped folder
+6. Right-click any video page → "Send to ReClip"
+7. Or click the extension icon to send the current tab URL
 
 ## Supported Sites
 
@@ -119,7 +123,7 @@ Output: `dist\ReClip.exe`
 
 ## Credits
 
-Project: ReClip (Custom) — Organized by **Bugsfree Studio**
+Project: ReClip (Inspired project) — Organized by **Bugsfree Studio**
 
 Based on [averygan/reclip](https://github.com/averygan/reclip)
 
