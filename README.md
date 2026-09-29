@@ -7,7 +7,7 @@ A self-hosted, open-source video and audio downloader with a clean web UI. Paste
 ![Desktop App](https://img.shields.io/badge/desktop-pyinstaller-purple)
 ![Version](https://img.shields.io/badge/version-1.1.0-blue)
 
-![ReClip Desktop App](assets/preview-mp3.png)
+![ReClip Desktop App](assets/dashboard.png)
 
 ## Desktop App
 
