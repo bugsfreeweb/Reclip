@@ -29,12 +29,12 @@ A self-hosted, open-source video and audio downloader with a clean web UI. Paste
 - Download history with re-download and clear options
 - Settings panel (save location, history toggle)
 - Right-click paste on URL input
-- **Batch import from file** — load URLs from a .txt file
-- **Auto-subtitle download** — fetch SRT/VTT subtitles alongside video
-- **Trim/clip download** — download only a time range (e.g. 0:30–2:00)
-- **Format presets** — save preferred quality/format combos
-- **Duplicate detection** — warn if URL already in history
-- **Dark/light theme toggle** — switch between warm beige and dark mode
+- Batch import from file — load URLs from a .txt file
+- Auto-subtitle download — fetch SRT/VTT subtitles alongside video
+- Trim/clip download — download only a time range (e.g. 0:30–2:00)
+- Format presets — save preferred quality/format combos
+- Duplicate detection — warn if URL already in history
+- Dark/light theme toggle — switch between warm beige and dark mode
 - **Browser extension** — one-click send URL to ReClip from any page
 - **Update checker** — check and update yt-dlp engine from settings
 - **Parallel downloads** — download multiple videos simultaneously
