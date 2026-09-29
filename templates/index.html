@@ -1141,20 +1141,8 @@ $('#extDownload').onclick=()=>{
 function checkExtStatus(){
   const dot=$('#extDot'),status=$('#extStatus');
   if(!dot||!status)return;
-  try{
-    chrome.runtime?.sendMessage?.('reclip-extension',{ping:true},()=>{
-      if(chrome.runtime.lastError){
-        dot.style.background='var(--error)';
-        status.textContent='Not installed';
-      }else{
-        dot.style.background='var(--ok)';
-        status.textContent='Connected';
-      }
-    });
-  }catch{
-    dot.style.background='var(--error)';
-    status.textContent='Not installed';
-  }
+  dot.style.background='var(--warn)';
+  status.textContent='Check in browser';
 }
 $('#btnYtdlpUpdate').onclick=async e=>{
   const b=e.currentTarget;b.disabled=true;b.innerHTML='<i data-lucide="loader-circle" class="spin"></i>Updating…';icons();

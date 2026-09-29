@@ -10,7 +10,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   const url = info.linkUrl || info.pageUrl || tab.url;
   if (!url || !url.startsWith('http')) return;
   try {
-    await fetch('http://localhost:8899/api/history', {
+    const serverUrl = await chrome.storage.local.get('reclipServer').then(r => r.reclipServer || 'http://localhost:8899');
+    await fetch(serverUrl + '/api/history', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url, title: tab.title || '', thumbnail: '' }),

@@ -10,6 +10,10 @@ import yt_dlp
 import imageio_ffmpeg
 
 from flask import Flask, request, jsonify, send_file, render_template, send_from_directory
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)
 
 app = Flask(__name__)
 
