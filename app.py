@@ -1,57 +1,99 @@
 import os
+import sys
+import json
 import uuid
 import glob
-import json
-import subprocess
 import threading
-from flask import Flask, request, jsonify, send_file, render_template
+from pathlib import Path
+
+import yt_dlp
+import imageio_ffmpeg
+
+from flask import Flask, request, jsonify, send_file, render_template, send_from_directory
 
 app = Flask(__name__)
-DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "downloads")
-os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+
+if getattr(sys, "frozen", False):
+    BASE_DIR = Path(sys._MEIPASS)
+else:
+    BASE_DIR = Path(__file__).resolve().parent
+
+DOWNLOAD_DIR = BASE_DIR / "downloads"
+DOWNLOAD_DIR.mkdir(exist_ok=True)
+
+HISTORY_FILE = BASE_DIR / "history.json"
+
+if getattr(sys, "frozen", False):
+    TOOLS_DIR = str(BASE_DIR / "tools")
+else:
+    TOOLS_DIR = str(BASE_DIR / "tools")
+
+FFMPEG = os.path.join(TOOLS_DIR, "ffmpeg.exe")
+if not os.path.exists(FFMPEG):
+    FFMPEG = str(Path(imageio_ffmpeg.get_ffmpeg_exe()).parent / "ffmpeg.exe")
 
 jobs = {}
 
 
-def parse_ytdlp_json(stdout):
-    """Parse yt-dlp JSON output.
+def load_history():
+    if HISTORY_FILE.exists():
+        try:
+            return json.loads(HISTORY_FILE.read_text())
+        except Exception:
+            return []
+    return []
 
-    With ``-j`` yt-dlp prints one JSON object per line. Some extractors
-    emit multiple videos even with ``--no-playlist``, so stdout contains
-    several objects and a plain ``json.loads`` raises "Extra data".
-    Return the first valid object.
-    """
-    for line in stdout.splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        return json.loads(line)
-    raise ValueError("yt-dlp returned no data")
+
+def save_history(history):
+    HISTORY_FILE.write_text(json.dumps(history, indent=2))
 
 
 def run_download(job_id, url, format_choice, format_id):
     job = jobs[job_id]
-    out_template = os.path.join(DOWNLOAD_DIR, f"{job_id}.%(ext)s")
-
-    cmd = ["yt-dlp", "--no-playlist", "-o", out_template]
+    out_template = str(DOWNLOAD_DIR / f"{job_id}.%(ext)s")
 
     if format_choice == "audio":
-        cmd += ["-x", "--audio-format", "mp3"]
+        format_str = "bestaudio/best"
+        postprocessors = [{"key": "FFmpegExtractAudio", "preferredcodec": "mp3"}]
+        merge_ext = None
     elif format_id:
-        cmd += ["-f", f"{format_id}+bestaudio/best", "--merge-output-format", "mp4"]
+        format_str = f"{format_id}+bestaudio/best"
+        postprocessors = []
+        merge_ext = "mp4"
     else:
-        cmd += ["-f", "bestvideo+bestaudio/best", "--merge-output-format", "mp4"]
+        format_str = "bestvideo+bestaudio/best"
+        postprocessors = []
+        merge_ext = "mp4"
 
-    cmd.append(url)
+    def progress_hook(d):
+        if d["status"] == "downloading":
+            job["progress"] = {
+                "downloaded": d.get("downloaded_bytes", 0),
+                "total": d.get("total_bytes") or d.get("total_bytes_estimate", 0),
+                "speed": d.get("speed", 0),
+                "eta": d.get("eta", 0),
+            }
+        elif d["status"] == "finished":
+            job["progress"] = {"downloaded": 1, "total": 1, "speed": 0, "eta": 0}
+
+    ydl_opts = {
+        "format": format_str,
+        "outtmpl": out_template,
+        "noplaylist": True,
+        "quiet": True,
+        "no_warnings": True,
+        "ffmpeg_location": FFMPEG,
+        "postprocessors": postprocessors,
+        "progress_hooks": [progress_hook],
+    }
+    if merge_ext:
+        ydl_opts["merge_output_format"] = merge_ext
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
-        if result.returncode != 0:
-            job["status"] = "error"
-            job["error"] = result.stderr.strip().split("\n")[-1]
-            return
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
 
-        files = glob.glob(os.path.join(DOWNLOAD_DIR, f"{job_id}.*"))
+        files = glob.glob(str(DOWNLOAD_DIR / f"{job_id}.*"))
         if not files:
             job["status"] = "error"
             job["error"] = "Download completed but no file was found"
@@ -73,17 +115,25 @@ def run_download(job_id, url, format_choice, format_id):
 
         job["status"] = "done"
         job["file"] = chosen
+        job["progress"] = {"downloaded": 1, "total": 1, "speed": 0, "eta": 0}
         ext = os.path.splitext(chosen)[1]
         title = job.get("title", "").strip()
-        # Sanitize title for filename
         if title:
             safe_title = "".join(c for c in title if c not in r'\/:*?"<>|').strip()[:100].strip()
             job["filename"] = f"{safe_title}{ext}" if safe_title else os.path.basename(chosen)
         else:
             job["filename"] = os.path.basename(chosen)
-    except subprocess.TimeoutExpired:
-        job["status"] = "error"
-        job["error"] = "Download timed out (5 min limit)"
+
+        history = load_history()
+        history.insert(0, {
+            "url": url,
+            "title": job.get("title", ""),
+            "thumbnail": job.get("thumbnail", ""),
+            "filename": job["filename"],
+            "format": format_choice,
+            "timestamp": str(uuid.uuid4())[:8],
+        })
+        save_history(history[:100])
     except Exception as e:
         job["status"] = "error"
         job["error"] = str(e)
@@ -94,6 +144,11 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/static/<path:filename>")
+def serve_static(filename):
+    return send_from_directory(BASE_DIR / "static", filename)
+
+
 @app.route("/api/info", methods=["POST"])
 def get_info():
     data = request.json
@@ -101,15 +156,17 @@ def get_info():
     if not url:
         return jsonify({"error": "No URL provided"}), 400
 
-    cmd = ["yt-dlp", "--no-playlist", "-j", url]
+    ydl_opts = {
+        "quiet": True,
+        "no_warnings": True,
+        "noplaylist": True,
+        "skip_download": True,
+        "ffmpeg_location": FFMPEG,
+    }
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-        if result.returncode != 0:
-            return jsonify({"error": result.stderr.strip().split("\n")[-1]}), 400
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
 
-        info = parse_ytdlp_json(result.stdout)
-
-        # Build quality options — keep best format per resolution
         best_by_height = {}
         for f in info.get("formats", []):
             height = f.get("height")
@@ -134,8 +191,6 @@ def get_info():
             "uploader": info.get("uploader", ""),
             "formats": formats,
         })
-    except subprocess.TimeoutExpired:
-        return jsonify({"error": "Timed out fetching video info"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
@@ -147,18 +202,20 @@ def get_playlist_info():
     if not url:
         return jsonify({"error": "No URL provided"}), 400
 
-    cmd = ["yt-dlp", "--flat-playlist", "-J", url]
+    ydl_opts = {
+        "quiet": True,
+        "no_warnings": True,
+        "extract_flat": True,
+        "skip_download": True,
+        "ffmpeg_location": FFMPEG,
+    }
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-        if result.returncode != 0:
-            return jsonify({"error": result.stderr.strip().split("\n")[-1]}), 400
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
 
-        info = json.loads(result.stdout)
         entries = info.get("entries", [])
-        urls = [entry.get("url") for entry in entries if entry.get("url")]
+        urls = [entry.get("url") or entry.get("webpage_url") for entry in entries if entry]
         return jsonify({"urls": urls})
-    except subprocess.TimeoutExpired:
-        return jsonify({"error": "Timed out fetching playlist info"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
@@ -170,12 +227,19 @@ def start_download():
     format_choice = data.get("format", "video")
     format_id = data.get("format_id")
     title = data.get("title", "")
+    thumbnail = data.get("thumbnail", "")
 
     if not url:
         return jsonify({"error": "No URL provided"}), 400
 
     job_id = uuid.uuid4().hex[:10]
-    jobs[job_id] = {"status": "downloading", "url": url, "title": title}
+    jobs[job_id] = {
+        "status": "downloading",
+        "url": url,
+        "title": title,
+        "thumbnail": thumbnail,
+        "progress": {"downloaded": 0, "total": 0, "speed": 0, "eta": 0},
+    }
 
     thread = threading.Thread(target=run_download, args=(job_id, url, format_choice, format_id))
     thread.daemon = True
@@ -193,6 +257,7 @@ def check_status(job_id):
         "status": job["status"],
         "error": job.get("error"),
         "filename": job.get("filename"),
+        "progress": job.get("progress", {}),
     })
 
 
@@ -202,6 +267,55 @@ def download_file(job_id):
     if not job or job["status"] != "done":
         return jsonify({"error": "File not ready"}), 404
     return send_file(job["file"], as_attachment=True, download_name=job["filename"])
+
+
+@app.route("/api/preview/<job_id>")
+def preview_file(job_id):
+    job = jobs.get(job_id)
+    if not job or job["status"] != "done":
+        return jsonify({"error": "File not ready"}), 404
+    return send_file(job["file"])
+
+
+@app.route("/api/history", methods=["GET"])
+def get_history():
+    return jsonify({"history": load_history()})
+
+
+@app.route("/api/history", methods=["POST"])
+def add_history():
+    data = request.json
+    url = data.get("url", "").strip()
+    title = data.get("title", "")
+    if not url:
+        return jsonify({"error": "No URL provided"}), 400
+    history = load_history()
+    history.insert(0, {
+        "url": url,
+        "title": title,
+        "thumbnail": data.get("thumbnail", ""),
+        "filename": data.get("filename", ""),
+        "format": data.get("format", "video"),
+        "timestamp": str(uuid.uuid4())[:8],
+    })
+    save_history(history[:100])
+    return jsonify({"ok": True})
+
+
+@app.route("/api/history", methods=["DELETE"])
+def clear_history():
+    save_history([])
+    return jsonify({"ok": True})
+
+
+@app.route("/api/history/remove", methods=["POST"])
+def remove_history_item():
+    data = request.json
+    timestamp = data.get("timestamp", "")
+    history = load_history()
+    history = [h for h in history if h.get("timestamp") != timestamp]
+    save_history(history)
+    return jsonify({"ok": True})
 
 
 if __name__ == "__main__":

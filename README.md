@@ -4,10 +4,15 @@ A self-hosted, open-source video and audio downloader with a clean web UI. Paste
 
 ![Python](https://img.shields.io/badge/python-3.8+-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
+![Desktop App](https://img.shields.io/badge/desktop-pyinstaller-purple)
 
-https://github.com/user-attachments/assets/419d3e50-c933-444b-8cab-a9724986ba05
+![ReClip](assets/preview-mp3.png)
 
-![ReClip MP3 Mode](assets/preview-mp3.png)
+## Desktop App
+
+A standalone desktop app is bundled as a single `ReClip.exe` (Windows). No browser needed — double-click `ReClip.bat` to launch. The exe includes yt-dlp and ffmpeg built in.
+
+![Desktop App](assets/preview-mp3.png)
 
 ## Features
 
@@ -18,8 +23,27 @@ https://github.com/user-attachments/assets/419d3e50-c933-444b-8cab-a9724986ba05
 - Automatic URL deduplication
 - Clean, responsive UI — no frameworks, no build step
 - Single Python file backend (~150 lines)
+- Animated splash screen with ReClip branding
+- Download progress bar with speed and ETA
+- Save file dialog — choose where to save after download
+- Watch/preview downloaded files before saving
+- Download history with re-download and clear options
+- Settings panel (save location, history toggle)
+- Right-click paste on URL input
 
 ## Quick Start
+
+### Desktop App (Windows)
+
+```bash
+git clone https://github.com/averygan/reclip.git
+cd reclip
+./reclip.bat
+```
+
+The first run will build `dist\ReClip.exe` automatically.
+
+### Web App
 
 ```bash
 brew install yt-dlp ffmpeg    # or apt install ffmpeg && pip install yt-dlp
@@ -43,6 +67,8 @@ docker build -t reclip . && docker run -p 8899:8899 reclip
 3. Click **Fetch** to load video info and thumbnails
 4. Select quality/resolution if available
 5. Click **Download** on individual videos, or **Download All**
+6. After download, click **Save** to choose where to save the file
+7. Click **Watch** to preview the downloaded file
 
 ## Supported Sites
 
@@ -54,8 +80,33 @@ YouTube, TikTok, Instagram, Twitter/X, Reddit, Facebook, Vimeo, Twitch, Dailymot
 
 - **Backend:** Python + Flask (~150 lines)
 - **Frontend:** Vanilla HTML/CSS/JS (single file, no build step)
+- **Desktop:** PyInstaller + pywebview (single-file exe)
 - **Download engine:** [yt-dlp](https://github.com/yt-dlp/yt-dlp) + [ffmpeg](https://ffmpeg.org/)
-- **Dependencies:** 2 (Flask, yt-dlp)
+- **Dependencies:** Flask, yt-dlp, imageio-ffmpeg, pywebview
+
+## Building the Desktop App
+
+```bash
+pip install flask yt-dlp imageio-ffmpeg pywebview pyinstaller
+python -m PyInstaller --onefile --windowed --name "ReClip" \
+    --add-data "templates;templates" \
+    --add-data "static;static" \
+    --add-data "tools;tools" \
+    --add-data "app.py;." \
+    --add-data "desktop.py;." \
+    --hidden-import yt_dlp \
+    --hidden-import imageio_ffmpeg \
+    --hidden-import webview \
+    desktop.py
+```
+
+Output: `dist\ReClip.exe`
+
+## Credits
+
+Project: ReClip (Custom) — Organized by **Bugsfree Studio**
+
+Based on [averygan/reclip](https://github.com/averygan/reclip)
 
 ## Disclaimer
 

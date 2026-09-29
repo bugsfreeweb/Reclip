@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  width: 100vw; height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: #f4f1eb;
+  font-family: 'DM Mono', monospace;
+  overflow: hidden;
+  transition: opacity 0.8s ease;
+}
+body.fade-out { opacity: 0; }
+
+.scene {
+  position: relative;
+  width: 200px; height: 200px;
+  margin-bottom: 30px;
+}
+
+.plate {
+  position: absolute;
+  bottom: 20px; left: 50%;
+  transform: translateX(-50%);
+  width: 140px; height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  animation: plateIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes plateIn {
+  from { transform: translateX(-50%) scale(0); opacity: 0; }
+  to { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
+.food {
+  position: absolute;
+  bottom: 40px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 40px;
+  opacity: 0;
+  animation: foodDrop 1.5s ease-in-out infinite;
+}
+.food:nth-child(2) { animation-delay: 0.3s; font-size: 35px; }
+.food:nth-child(3) { animation-delay: 0.6s; font-size: 38px; }
+.food:nth-child(4) { animation-delay: 0.9s; font-size: 32px; }
+.food:nth-child(5) { animation-delay: 1.2s; font-size: 36px; }
+
+@keyframes foodDrop {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-80px) rotate(0deg); }
+  20% { opacity: 1; transform: translateX(-50%) translateY(0) rotate(10deg); }
+  40% { transform: translateX(-50%) translateY(-10px) rotate(-5deg); }
+  60% { transform: translateX(-50%) translateY(0) rotate(0deg); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+}
+
+.download-icon {
+  position: absolute;
+  top: 10px; left: 50%;
+  transform: translateX(-50%);
+  width: 50px; height: 50px;
+  opacity: 0;
+  animation: downloadPulse 1.5s ease-in-out infinite;
+}
+@keyframes downloadPulse {
+  0%, 100% { opacity: 0; transform: translateX(-50%) scale(0.8); }
+  50% { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
+.arrow {
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 3px; height: 30px;
+  background: #e85d2a;
+  border-radius: 2px;
+  animation: arrowDown 1.5s ease-in-out infinite;
+}
+@keyframes arrowDown {
+  0% { opacity: 0; height: 0; }
+  50% { opacity: 1; height: 30px; }
+  100% { opacity: 0; height: 30px; }
+}
+
+.logo {
+  font-family: 'Instrument Serif', serif;
+  font-size: 3.5rem;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  color: #3a3a38;
+  margin-bottom: 8px;
+}
+.logo em { font-style: italic; color: #e85d2a; }
+
+.tagline {
+  font-size: 0.7rem;
+  color: #9c9889;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0;
+  animation: fadeIn 0.5s ease 0.5s forwards;
+}
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+.dots {
+  display: flex;
+  gap: 6px;
+  margin-top: 20px;
+}
+.dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #e85d2a;
+  animation: dotBounce 1.4s ease-in-out infinite;
+}
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotBounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+</style>
+</head>
+<body>
+  <div class="scene">
+    <div class="download-icon">
+      <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#e85d2a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+    </div>
+    <div class="arrow"></div>
+    <div class="food">&#x1F354;</div>
+    <div class="food">&#x1F35F;</div>
+    <div class="food">&#x1F355;</div>
+    <div class="food">&#x1F32E;</div>
+    <div class="food">&#x1F372;</div>
+    <div class="plate"></div>
+  </div>
+
+  <div class="logo">Re<em>Clip</em></div>
+  <div class="tagline">Free media downloader</div>
+
+  <div class="dots">
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  </div>
+
+<script>
+setTimeout(() => {
+  document.body.classList.add('fade-out');
+  setTimeout(() => { window.location.href = '/'; }, 800);
+}, 3000);
+</script>
+</body>
+</html>

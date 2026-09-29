@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ReClip — Free Media Downloader</title>
-  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/static/icon.ico" type="image/x-icon">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -46,9 +46,17 @@
       max-width: 620px;
       margin: 0 auto;
       padding: 60px 24px 80px;
+      position: relative;
+      z-index: 1;
     }
 
-    .brand { margin-bottom: 48px; }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 48px;
+    }
+
     .brand h1 {
       font-family: 'Instrument Serif', serif;
       font-size: 4.2rem;
@@ -65,6 +73,21 @@
       letter-spacing: 0.04em;
       text-transform: uppercase;
     }
+
+    .header-actions { display: flex; gap: 8px; }
+
+    .icon-btn {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      border: 1.5px solid var(--card-border);
+      background: var(--card);
+      color: var(--muted);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      transition: all 0.25s;
+    }
+    .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
 
     textarea {
       width: 100%;
@@ -141,7 +164,6 @@
     .fetch-btn:active { transform: scale(0.98); }
     .fetch-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-    /* Cards */
     .cards { margin-top: 24px; }
 
     .card {
@@ -169,36 +191,21 @@
       flex-shrink: 0;
       position: relative;
     }
-    .card-thumb img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-    /* No-thumbnail icon */
+    .card-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .card-thumb .no-thumb {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
       color: var(--muted);
     }
-    .card-thumb .no-thumb svg {
-      width: 28px;
-      height: 28px;
-      opacity: 0.5;
-    }
+    .card-thumb .no-thumb svg { width: 28px; height: 28px; opacity: 0.5; }
 
-    /* Shimmer skeleton for loading state */
     .card-thumb.loading {
       background: var(--shimmer);
       background-size: 200% 100%;
       animation: shimmer 1.5s infinite;
     }
     .skeleton-line {
-      height: 12px;
-      border-radius: 4px;
+      height: 12px; border-radius: 4px;
       background: var(--shimmer);
       background-size: 200% 100%;
       animation: shimmer 1.5s infinite;
@@ -211,13 +218,7 @@
       100% { background-position: -200% 0; }
     }
 
-    .card-body {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
+    .card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
     .card-title {
       font-family: 'Instrument Serif', serif;
       font-size: 1rem;
@@ -236,12 +237,7 @@
       margin-bottom: 8px;
     }
 
-    .card-actions {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
+    .card-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 
     .card-dl-btn {
       padding: 6px 14px;
@@ -262,10 +258,7 @@
     .card-dl-btn.done { background: var(--success); color: #fff; }
     .card-dl-btn.error { background: var(--error); color: #fff; }
 
-    .card-status {
-      font-size: 0.68rem;
-      color: var(--muted);
-    }
+    .card-status { font-size: 0.68rem; color: var(--muted); }
     .card-status.downloading { color: var(--accent); }
     .card-status.done { color: var(--success); }
     .card-status.error { color: var(--error); }
@@ -281,64 +274,62 @@
       cursor: pointer;
       transition: all 0.2s;
     }
-    .q-chip.active {
-      border-color: var(--fg);
-      color: var(--fg);
-      background: rgba(26,26,24,0.04);
-    }
+    .q-chip.active { border-color: var(--fg); color: var(--fg); background: rgba(26,26,24,0.04); }
     .q-chip:hover:not(.active) { border-color: var(--muted); }
 
-    /* Error card */
-    .card.card-error {
-      border-color: rgba(196, 61, 61, 0.2);
-      background: rgba(196, 61, 61, 0.03);
+    .progress-container { margin-top: 10px; display: none; }
+    .progress-container.active { display: block; }
+    .progress-bar-bg {
+      width: 100%; height: 5px;
+      background: var(--card-border);
+      border-radius: 3px;
+      overflow: hidden;
     }
-    .card-error-icon {
-      width: 100%;
+    .progress-bar-fill {
       height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--success));
+      border-radius: 3px;
+      transition: width 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .progress-bar-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      animation: shimmer 1.5s infinite;
+    }
+    .progress-info {
       display: flex;
-      align-items: center;
-      justify-content: center;
+      justify-content: space-between;
+      margin-top: 4px;
+      font-size: 0.65rem;
+      color: var(--muted);
+    }
+    .progress-speed { color: var(--success); }
+    .progress-eta { color: var(--accent); }
+
+    .card.card-error { border-color: rgba(196, 61, 61, 0.2); background: rgba(196, 61, 61, 0.03); }
+    .card-error-icon {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
       background: rgba(196, 61, 61, 0.08);
       color: var(--error);
     }
-    .card-error-icon svg {
-      width: 24px;
-      height: 24px;
-    }
-    .card-error-msg {
-      font-size: 0.72rem;
-      color: var(--error);
-      margin-top: 2px;
-      line-height: 1.4;
-    }
-    .card-error-url {
-      font-size: 0.65rem;
-      color: var(--muted);
-      word-break: break-all;
-      margin-top: 4px;
-    }
+    .card-error-icon svg { width: 24px; height: 24px; }
+    .card-error-msg { font-size: 0.72rem; color: var(--error); margin-top: 2px; line-height: 1.4; }
+    .card-error-url { font-size: 0.65rem; color: var(--muted); word-break: break-all; margin-top: 4px; }
 
-    /* Download all bar */
-    .dl-all-bar {
-      display: flex;
-      gap: 10px;
-      margin-top: 16px;
-    }
+    .dl-all-bar { display: flex; gap: 10px; margin-top: 16px; }
     .dl-all-btn {
-      flex: 1;
-      padding: 12px;
-      border: none;
-      border-radius: 10px;
-      background: var(--fg);
-      color: var(--bg);
+      flex: 1; padding: 12px;
+      border: none; border-radius: 10px;
+      background: var(--fg); color: var(--bg);
       font-family: 'DM Mono', monospace;
-      font-size: 0.82rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
+      font-size: 0.82rem; font-weight: 500;
+      cursor: pointer; transition: all 0.2s;
+      letter-spacing: 0.04em; text-transform: uppercase;
     }
     .dl-all-btn:hover { background: #2d2d2a; }
     .dl-all-btn:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -364,27 +355,212 @@
       line-height: 1.8;
     }
 
-    /* Mobile */
+    .panel-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.08);
+      z-index: 100;
+    }
+    .panel-overlay.active { display: block; }
+
+    .panel {
+      position: fixed;
+      top: 0; right: -380px;
+      width: 360px; height: 100vh;
+      background: var(--card);
+      border-left: 1.5px solid var(--card-border);
+      z-index: 101;
+      transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex; flex-direction: column;
+    }
+    .panel.active { right: 0; }
+    .panel-left { right: auto; left: -380px; border-left: none; border-right: 1.5px solid var(--card-border); }
+    .panel-left.active { left: 0; }
+
+    .panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px;
+      border-bottom: 1.5px solid var(--card-border);
+    }
+    .panel-title { font-family: 'Instrument Serif', serif; font-size: 1.3rem; }
+    .panel-close {
+      width: 30px; height: 30px;
+      border-radius: 8px; border: none;
+      background: var(--bg);
+      color: var(--muted);
+      cursor: pointer; font-size: 16px;
+      transition: all 0.2s;
+    }
+    .panel-close:hover { background: var(--card-border); color: var(--fg); }
+
+    .panel-content { flex: 1; overflow-y: auto; padding: 20px; }
+
+    .settings-group { margin-bottom: 24px; }
+    .settings-label {
+      font-size: 0.65rem; font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 10px;
+    }
+    .settings-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px;
+      background: var(--bg);
+      border-radius: 10px;
+      margin-bottom: 6px;
+      border: 1px solid var(--card-border);
+    }
+    .settings-item-label { font-size: 0.8rem; color: var(--fg); }
+
+    .toggle {
+      width: 40px; height: 22px;
+      border-radius: 11px;
+      background: var(--card-border);
+      border: none;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.25s;
+    }
+    .toggle.active { background: var(--accent); }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: white;
+      transition: all 0.25s;
+    }
+    .toggle.active::after { left: 20px; }
+
+    .history-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px;
+      background: var(--bg);
+      border-radius: 10px;
+      margin-bottom: 6px;
+      border: 1px solid var(--card-border);
+      transition: all 0.2s;
+    }
+    .history-item:hover { border-color: var(--accent); }
+    .history-thumb {
+      width: 50px; height: 34px;
+      border-radius: 5px; overflow: hidden;
+      background: var(--card-border);
+      flex-shrink: 0;
+    }
+    .history-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .history-info { flex: 1; min-width: 0; }
+    .history-title {
+      font-size: 0.78rem;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .history-url {
+      font-size: 0.62rem; color: var(--muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .history-actions { display: flex; gap: 4px; }
+    .history-btn {
+      width: 26px; height: 26px;
+      border-radius: 6px; border: none;
+      background: var(--card-border);
+      color: var(--muted);
+      cursor: pointer; font-size: 11px;
+      transition: all 0.2s;
+    }
+    .history-btn:hover { background: var(--accent); color: white; }
+
+    .history-clear {
+      width: 100%; padding: 10px;
+      border: 1.5px solid var(--card-border);
+      border-radius: 10px;
+      background: transparent;
+      color: var(--error);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem; font-weight: 500;
+      cursor: pointer; transition: all 0.2s;
+      margin-top: 10px;
+    }
+    .history-clear:hover { background: rgba(196,61,61,0.05); border-color: var(--error); }
+
+    .history-empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 0.8rem; }
+
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+
+    .modal {
+      width: 90%; max-width: 700px;
+      max-height: 85vh;
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1.5px solid var(--card-border);
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1.5px solid var(--card-border);
+    }
+    .modal-title { font-family: 'Instrument Serif', serif; font-size: 1.1rem; }
+    .modal-close {
+      width: 28px; height: 28px;
+      border-radius: 7px; border: none;
+      background: var(--bg); color: var(--muted);
+      cursor: pointer; font-size: 14px;
+    }
+    .modal-body { flex: 1; overflow: hidden; background: #000; }
+    .modal-body video, .modal-body audio { width: 100%; height: 100%; max-height: 70vh; }
+
+    .toast {
+      position: fixed;
+      bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--fg); color: var(--bg);
+      border-radius: 10px;
+      padding: 10px 20px;
+      font-size: 0.78rem;
+      z-index: 300;
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
     @media (max-width: 500px) {
       .brand h1 { font-size: 3rem; }
       .page { padding: 40px 16px 60px; }
       .card { flex-direction: column; gap: 10px; }
-      .card-thumb {
-        width: 100%;
-        min-width: unset;
-        height: 160px;
-      }
+      .card-thumb { width: 100%; min-width: unset; height: 160px; }
       .card-title { white-space: normal; }
       .controls { flex-wrap: wrap; }
       .fetch-btn { width: 100%; }
+      .panel { width: 100%; right: -100%; }
+      .panel-left { left: -100%; }
     }
   </style>
 </head>
 <body>
   <div class="page">
-    <div class="brand">
-      <h1>Re<em>Clip</em></h1>
-      <p>Free media downloader</p>
+    <div class="header">
+      <div class="brand">
+        <h1>Re<em>Clip</em></h1>
+        <p>Free media downloader</p>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" onclick="toggleHistory()" title="History">&#x23F0;</button>
+        <button class="icon-btn" onclick="toggleSettings()" title="Settings">&#x2699;</button>
+      </div>
     </div>
 
     <textarea id="urls" placeholder="Paste one or more URLs..." rows="2"></textarea>
@@ -403,13 +579,69 @@
     <div class="footer">
       YouTube &middot; TikTok &middot; Instagram &middot; Twitter/X &middot; Reddit &middot; Facebook<br>
       Vimeo &middot; Twitch &middot; Dailymotion &middot; SoundCloud &middot; Loom &middot; Streamable<br>
-      Pinterest &middot; Tumblr &middot; Threads &middot; LinkedIn &middot; 1000+ more
+      Pinterest &middot; Tumblr &middot; Threads &middot; LinkedIn &middot; 1000+ more<br><br>
+      Project: ReClip (Custom) &middot; Organized by Bugsfree Studio
     </div>
   </div>
+
+  <div class="panel-overlay" id="panelOverlay" onclick="closePanels()"></div>
+
+  <div class="panel" id="settingsPanel">
+    <div class="panel-header">
+      <div class="panel-title">Settings</div>
+      <button class="panel-close" onclick="closePanels()">&times;</button>
+    </div>
+    <div class="panel-content">
+      <div class="settings-group">
+        <div class="settings-label">Download</div>
+        <div class="settings-item">
+          <span class="settings-item-label">Ask where to save</span>
+          <div class="toggle active" id="toggleSave" onclick="toggleSetting('save')"></div>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-label">History</div>
+        <div class="settings-item">
+          <span class="settings-item-label">Save download history</span>
+          <div class="toggle active" id="toggleHistory" onclick="toggleSetting('history')"></div>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-label">About</div>
+        <div class="settings-item">
+          <span class="settings-item-label">Version</span>
+          <span style="font-size:0.75rem;color:var(--muted)">1.0.0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel panel-left" id="historyPanel">
+    <div class="panel-header">
+      <div class="panel-title">History</div>
+      <button class="panel-close" onclick="closePanels()">&times;</button>
+    </div>
+    <div class="panel-content" id="historyContent">
+      <div class="history-empty">No download history yet</div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="watchModal" onclick="closeWatch(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title" id="watchTitle">Preview</div>
+        <button class="modal-close" onclick="closeWatch()">&times;</button>
+      </div>
+      <div class="modal-body" id="watchBody"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
 
   <script>
     let currentFormat = 'video';
     let cardData = [];
+    let settings = JSON.parse(localStorage.getItem('reclip_settings') || '{"save":true,"history":true}');
 
     function setFormat(btn) {
       document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
@@ -428,6 +660,21 @@
       return `${m}:${sec.toString().padStart(2, '0')}`;
     }
 
+    function fmtSpeed(bps) {
+      if (!bps) return '';
+      const u = ['B/s','KB/s','MB/s','GB/s'];
+      let i = 0;
+      while (bps >= 1024 && i < u.length-1) { bps /= 1024; i++; }
+      return `${bps.toFixed(1)} ${u[i]}`;
+    }
+
+    function fmtEta(s) {
+      if (!s) return '';
+      const m = Math.floor(s / 60);
+      const sec = Math.floor(s % 60);
+      return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+    }
+
     function esc(s) {
       const d = document.createElement('div');
       d.textContent = s;
@@ -442,13 +689,52 @@
       if (err.includes('HTTP Error 404')) return 'Video not found';
       if (err.includes('copyright')) return 'Video blocked due to copyright';
       if (err.includes('geo')) return 'Video not available in your region';
-      if (err.includes('timed out') || err.includes('Timed out')) return 'Request timed out — try again';
-      if (err.includes('network') || err.includes('Network')) return 'Network error — check your connection';
+      if (err.includes('timed out') || err.includes('Timed out')) return 'Request timed out';
+      if (err.includes('network') || err.includes('Network')) return 'Network error';
+      if (err.includes('ffmpeg')) return 'FFmpeg error — please restart the app';
       return err.length > 80 ? err.slice(0, 80) + '...' : err;
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast show';
+      setTimeout(() => { t.className = 'toast'; }, 3000);
     }
 
     document.getElementById('urls').addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); go(); }
+    });
+
+    const ta = document.getElementById('urls');
+    ta.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      const menu = document.createElement('div');
+      menu.style.cssText = 'position:fixed;z-index:9999;background:var(--card);border:1.5px solid var(--card-border);border-radius:10px;padding:4px;box-shadow:0 8px 32px rgba(0,0,0,0.15);min-width:120px;';
+      const pasteBtn = document.createElement('button');
+      pasteBtn.textContent = 'Paste';
+      pasteBtn.style.cssText = 'display:block;width:100%;padding:8px 14px;border:none;background:transparent;color:var(--fg);font-family:DM Mono,monospace;font-size:0.78rem;cursor:pointer;text-align:left;border-radius:6px;';
+      pasteBtn.onmouseenter = () => pasteBtn.style.background = 'var(--bg)';
+      pasteBtn.onmouseleave = () => pasteBtn.style.background = 'transparent';
+      pasteBtn.onclick = async () => {
+        menu.remove();
+        try {
+          const text = await navigator.clipboard.readText();
+          if (text) {
+            const s = ta.selectionStart, en = ta.selectionEnd;
+            ta.value = ta.value.substring(0, s) + text + ta.value.substring(en);
+            ta.selectionStart = ta.selectionEnd = s + text.length;
+          }
+        } catch {
+          ta.focus();
+          showToast('Press Ctrl+V to paste');
+        }
+      };
+      menu.appendChild(pasteBtn);
+      menu.style.left = e.clientX + 'px';
+      menu.style.top = e.clientY + 'px';
+      document.body.appendChild(menu);
+      setTimeout(() => document.addEventListener('click', () => menu.remove(), { once: true }), 100);
     });
 
     async function go() {
@@ -462,7 +748,6 @@
       container.innerHTML = '';
       cardData = [];
 
-      // Check if youtube playlist URL
       for (let i = 0; i < urls.length; i++) {
         if (urls[i].includes('list=')) {
           const res = await fetch('/api/playlist', {
@@ -471,10 +756,7 @@
             body: JSON.stringify({ url: urls[i] }),
           });
           const data = await res.json();
-          if (data.urls) {
-            // replace playlist URL with individual video URLs
-            urls.splice(i, 1, ...data.urls);
-          }
+          if (data.urls) urls.splice(i, 1, ...data.urls);
         }
       }
 
@@ -511,10 +793,7 @@
         renderCard(idx);
       }
 
-      if (cardData.filter(c => c.status === 'ready').length > 1) {
-        renderDownloadAll();
-      }
-
+      if (cardData.filter(c => c.status === 'ready').length > 1) renderDownloadAll();
       btn.disabled = false;
       btn.textContent = 'Fetch';
     }
@@ -529,7 +808,6 @@
         document.getElementById('cards').appendChild(el);
       }
 
-      // Loading skeleton
       if (c.status === 'loading') {
         el.className = 'card';
         el.innerHTML = `
@@ -537,12 +815,10 @@
           <div class="card-body">
             <div class="skeleton-line medium"></div>
             <div class="skeleton-line short"></div>
-          </div>
-        `;
+          </div>`;
         return;
       }
 
-      // Error state
       if (c.status === 'info-error') {
         el.className = 'card card-error';
         el.innerHTML = `
@@ -555,12 +831,10 @@
             <div class="card-title" style="color:var(--error)">Could not fetch video</div>
             <div class="card-error-msg">${esc(friendlyError(c.error || ''))}</div>
             <div class="card-error-url">${esc(c.url)}</div>
-          </div>
-        `;
+          </div>`;
         return;
       }
 
-      // Ready / downloading / done / error states
       el.className = 'card';
       const isAudio = currentFormat === 'audio';
 
@@ -582,11 +856,25 @@
 
       let actionHtml = '';
       if (c.status === 'ready') {
-        actionHtml = `<button class="card-dl-btn" onclick="dlCard(${idx})">Download</button>${qualityChips}`;
+        actionHtml = `<button class="card-dl-btn" onclick="dlCard(${idx})">Download</button>
+          <button class="card-dl-btn" style="background:var(--card-border);color:var(--fg)" onclick="watchCard(${idx})">Watch</button>${qualityChips}`;
       } else if (c.status === 'downloading') {
-        actionHtml = `<span class="card-status downloading"><span class="spin"></span> Downloading...</span>`;
+        const p = c.progress || {};
+        const pct = p.total > 0 ? Math.round((p.downloaded / p.total) * 100) : 0;
+        actionHtml = `
+          <div class="progress-container active" style="width:100%">
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" style="width:${pct}%"></div>
+            </div>
+            <div class="progress-info">
+              <span>${pct}%</span>
+              <span class="progress-speed">${fmtSpeed(p.speed)}</span>
+              <span class="progress-eta">ETA: ${fmtEta(p.eta)}</span>
+            </div>
+          </div>`;
       } else if (c.status === 'done') {
         actionHtml = `<button class="card-dl-btn done" onclick="saveCard(${idx})">Save</button>
+          <button class="card-dl-btn" style="background:var(--card-border);color:var(--fg)" onclick="watchCard(${idx})">Watch</button>
           <span class="card-status done">${esc(c.filename || '')}</span>`;
       } else if (c.status === 'error') {
         actionHtml = `<button class="card-dl-btn" onclick="dlCard(${idx})">Retry</button>
@@ -597,16 +885,14 @@
         <div class="card-thumb">${thumbHtml}</div>
         <div class="card-body">
           <div class="card-title">${esc(c.title || 'Untitled')}</div>
-          <div class="card-meta">${esc(c.uploader)}${c.duration ? ' · ' + fmtDur(c.duration) : ''}</div>
+          <div class="card-meta">${esc(c.uploader)}${c.duration ? ' &middot; ' + fmtDur(c.duration) : ''}</div>
           <div class="card-actions">${actionHtml}</div>
-        </div>
-      `;
+        </div>`;
     }
 
     function renderDownloadAll() {
       const existing = document.getElementById('dl-all-bar');
       if (existing) existing.remove();
-
       const bar = document.createElement('div');
       bar.id = 'dl-all-bar';
       bar.className = 'dl-all-bar';
@@ -623,6 +909,7 @@
       const c = cardData[idx];
       c.status = 'downloading';
       c.error = null;
+      c.progress = { downloaded: 0, total: 0, speed: 0, eta: 0 };
       renderCard(idx);
 
       try {
@@ -634,6 +921,7 @@
             format: currentFormat,
             format_id: c.selectedFormatId,
             title: c.title || '',
+            thumbnail: c.thumbnail || '',
           }),
         });
         const data = await res.json();
@@ -663,11 +951,19 @@
             c.status = 'done';
             c.filename = data.filename;
             renderCard(idx);
-            saveCard(idx);
+            if (settings.save) {
+              showToast('Download complete! Choose where to save.');
+              setTimeout(() => saveCard(idx), 500);
+            } else {
+              saveCard(idx);
+            }
           } else if (data.status === 'error') {
             clearInterval(iv);
             c.status = 'error';
             c.error = data.error;
+            renderCard(idx);
+          } else if (data.progress) {
+            c.progress = data.progress;
             renderCard(idx);
           }
         } catch {
@@ -676,30 +972,162 @@
           c.error = 'Lost connection to server';
           renderCard(idx);
         }
-      }, 1000);
+      }, 500);
     }
 
-    function saveCard(idx) {
+    async function saveCard(idx) {
       const c = cardData[idx];
       if (!c.jobId) return;
-      const a = document.createElement('a');
-      a.href = `/api/file/${c.jobId}`;
-      a.download = c.filename || '';
-      a.click();
+      try {
+        const res = await fetch(`/api/file/${c.jobId}`);
+        const blob = await res.blob();
+
+        if (window.showSaveFilePicker) {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: c.filename || 'download',
+            types: [{
+              description: currentFormat === 'audio' ? 'Audio' : 'Video',
+              accept: { [currentFormat === 'audio' ? 'audio/mpeg' : 'video/mp4']: [currentFormat === 'audio' ? '.mp3' : '.mp4'] },
+            }],
+          });
+          const writable = await handle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+        } else {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = c.filename || 'download';
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+
+        if (settings.history) {
+          await fetch('/api/history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              url: c.url,
+              title: c.title || '',
+              thumbnail: c.thumbnail || '',
+              filename: c.filename || '',
+              format: currentFormat,
+            }),
+          });
+        }
+        showToast('File saved successfully');
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          showToast('Error saving: ' + err.message);
+        }
+      }
+    }
+
+    function watchCard(idx) {
+      const c = cardData[idx];
+      if (!c.jobId || c.status !== 'done') {
+        showToast('Please download first');
+        return;
+      }
+      const modal = document.getElementById('watchModal');
+      const body = document.getElementById('watchBody');
+      document.getElementById('watchTitle').textContent = c.title || 'Preview';
+      if (currentFormat === 'audio') {
+        body.innerHTML = `<audio controls autoplay src="/api/preview/${c.jobId}"></audio>`;
+      } else {
+        body.innerHTML = `<video controls autoplay src="/api/preview/${c.jobId}"></video>`;
+      }
+      modal.classList.add('active');
+    }
+
+    function closeWatch(e) {
+      if (e && e.target !== document.getElementById('watchModal')) return;
+      document.getElementById('watchModal').classList.remove('active');
+      document.getElementById('watchBody').innerHTML = '';
     }
 
     async function dlAll() {
       const btn = document.querySelector('.dl-all-btn');
       if (btn) { btn.disabled = true; btn.textContent = 'Downloading...'; }
-
       for (let i = 0; i < cardData.length; i++) {
-        if (cardData[i].status === 'ready') {
-          await dlCard(i);
-        }
+        if (cardData[i].status === 'ready') await dlCard(i);
       }
-
       if (btn) { btn.disabled = false; btn.textContent = 'Download All'; }
     }
+
+    function toggleSettings() {
+      document.getElementById('settingsPanel').classList.toggle('active');
+      document.getElementById('panelOverlay').classList.toggle('active');
+    }
+
+    function toggleHistory() {
+      document.getElementById('historyPanel').classList.toggle('active');
+      document.getElementById('panelOverlay').classList.toggle('active');
+      loadHistory();
+    }
+
+    function closePanels() {
+      document.getElementById('settingsPanel').classList.remove('active');
+      document.getElementById('historyPanel').classList.remove('active');
+      document.getElementById('panelOverlay').classList.remove('active');
+    }
+
+    function toggleSetting(key) {
+      settings[key] = !settings[key];
+      localStorage.setItem('reclip_settings', JSON.stringify(settings));
+      const t = document.getElementById('toggle' + key.charAt(0).toUpperCase() + key.slice(1));
+      if (t) t.classList.toggle('active', settings[key]);
+    }
+
+    async function loadHistory() {
+      try {
+        const res = await fetch('/api/history');
+        const data = await res.json();
+        const container = document.getElementById('historyContent');
+        if (!data.history || data.history.length === 0) {
+          container.innerHTML = '<div class="history-empty">No download history yet</div>';
+          return;
+        }
+        container.innerHTML = data.history.map(h => `
+          <div class="history-item">
+            <div class="history-thumb">${h.thumbnail ? `<img src="${h.thumbnail}" alt="">` : ''}</div>
+            <div class="history-info">
+              <div class="history-title">${esc(h.title || 'Untitled')}</div>
+              <div class="history-url">${esc(h.url)}</div>
+            </div>
+            <div class="history-actions">
+              <button class="history-btn" onclick="redownload('${esc(h.url)}')" title="Re-download">&#x21BB;</button>
+              <button class="history-btn" onclick="removeHistoryItem('${esc(h.timestamp)}')" title="Remove">&#x2715;</button>
+            </div>
+          </div>`).join('') + `<button class="history-clear" onclick="clearHistory()">Clear All History</button>`;
+      } catch {
+        document.getElementById('historyContent').innerHTML = '<div class="history-empty">Error loading history</div>';
+      }
+    }
+
+    async function clearHistory() {
+      await fetch('/api/history', { method: 'DELETE' });
+      loadHistory();
+      showToast('History cleared');
+    }
+
+    async function removeHistoryItem(timestamp) {
+      await fetch('/api/history/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ timestamp }),
+      });
+      loadHistory();
+    }
+
+    function redownload(url) {
+      document.getElementById('urls').value = url;
+      closePanels();
+      go();
+    }
+
+    document.getElementById('toggleSave').classList.toggle('active', settings.save);
+    document.getElementById('toggleHistory').classList.toggle('active', settings.history);
   </script>
 </body>
 </html>
