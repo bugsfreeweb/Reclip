@@ -461,25 +461,39 @@ body.dnd .composer{border-style:dashed;border-color:var(--accent)}
             <div id="pList"></div>
           </div>
 
-          <div class="sec">
-            <p class="sec-t">Browser extension</p>
-            <div class="srow" style="border-bottom:0">
-              <div class="l"><b><span class="dot-on"></span>&nbsp;Connected · v0.3</b><span>Right-click any page → "Send to ReClip".</span></div>
+            <div class="sec">
+              <p class="sec-t">Browser extension</p>
+              <div class="srow" style="border-bottom:0">
+                <div class="l"><b><span class="dot-on"></span>&nbsp;Connected · v0.3</b><span>Right-click any page → "Send to ReClip".</span></div>
+              </div>
             </div>
-          </div>
 
-          <div class="about">
-            <svg class="mark" viewBox="0 0 64 64" fill="none" aria-hidden="true"><rect x="9" y="10" width="46" height="15" rx="4.5" stroke="currentColor" stroke-width="3"/><path d="M19 11.5 25 24M31 11.5 37 24M43 11.5 49 24" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/><rect x="9" y="29" width="46" height="25" rx="4.5" stroke="currentColor" stroke-width="3"/><path d="M27 36.5v10l9-5z" fill="var(--accent)"/></svg>
-            <div>
-              <b>ReClip 1.1.0</b>
-              <div class="a-sub">YT-DLP + FFMPEG BUILT IN · PYWEBVIEW · MIT</div>
+            <div class="sec">
+              <p class="sec-t">Updates</p>
+              <div class="srow">
+                <div class="l"><b>App version</b><span>ReClip v1.1.0 — check GitHub for new releases.</span></div>
+                <div class="ctl"><button class="sm" id="btnAppUpdate" style="display:inline-flex;align-items:center;gap:7px;font:600 12px 'Bricolage Grotesque';color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:8px 14px;cursor:pointer;text-decoration:none"><i data-lucide="github" style="width:14px;height:14px"></i>GitHub Releases</button></div>
+              </div>
+              <div class="srow" style="border-bottom:0">
+                <div class="l"><b>yt-dlp engine</b><span>Download engine version and update status.</span></div>
+                <div class="ctl" style="gap:6px">
+                  <span class="mono-path" id="ytdlpVer">checking…</span>
+                  <button class="btn sm" id="btnYtdlpUpdate"><i data-lucide="refresh-cw"></i>Update</button>
+                </div>
+              </div>
             </div>
-            <div class="ctl"><button class="btn sm" id="btnUpdate"><i data-lucide="refresh-cw"></i>Check for updates</button></div>
-          </div>
 
-          <div style="text-align:center;padding:24px 0 8px;font:500 9.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;color:var(--ink3)">
-            RECLIP (INSPIRED PROJECT) · ORGANIZED BY BUGSFREE STUDIO
-          </div>
+            <div class="about">
+              <svg class="mark" viewBox="0 0 64 64" fill="none" aria-hidden="true"><rect x="9" y="10" width="46" height="15" rx="4.5" stroke="currentColor" stroke-width="3"/><path d="M19 11.5 25 24M31 11.5 37 24M43 11.5 49 24" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/><rect x="9" y="29" width="46" height="25" rx="4.5" stroke="currentColor" stroke-width="3"/><path d="M27 36.5v10l9-5z" fill="var(--accent)"/></svg>
+              <div>
+                <b>ReClip 1.1.0</b>
+                <div class="a-sub">YT-DLP + FFMPEG BUILT IN · PYWEBVIEW · MIT</div>
+              </div>
+            </div>
+
+            <div style="text-align:center;padding:24px 0 8px;font:500 9.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;color:var(--ink3)">
+              RECLIP (INSPIRED PROJECT) · ORGANIZED BY BUGSFREE STUDIO
+            </div>
         </div>
       </section>
     </main>
@@ -1077,7 +1091,18 @@ $('#btnBrowse').onclick=async()=>{
       fSel=handle.name||'chosen folder';
       S.saveFolder=fSel;saveS();syncSettingsUI();closeM(mFolder);
       toast('ok','Save folder set — '+fSel);
-    }catch(err){if(err.name!=='AbortError')toast('warn','Folder access denied')}
+    }catch(err){
+      if(err.name==='AbortError')return;
+      if(err.name==='NotAllowedError'||err.message?.includes('system files')){
+        toast('warn','Cannot select system folders. Choose a user folder like Downloads or Documents.');
+        fSel=S.saveFolder||'Downloads';
+        $('#fList').innerHTML=['Downloads','Documents','Videos','Desktop','Media/ReClip'].map(f=>`<button class="f-row${f===fSel?' on':''}" data-f="${esc(f)}"><i data-lucide="folder"></i><span>${esc(f)}</span></button>`).join('');
+        icons();openM(mFolder);
+      }else{
+        toast('warn','Folder access denied — using default');
+        fSel='Downloads';S.saveFolder=fSel;saveS();syncSettingsUI();closeM(mFolder);
+      }
+    }
   }else{
     fSel=S.saveFolder;
     $('#fList').innerHTML=FOLDERS.map(f=>`<button class="f-row${f===fSel?' on':''}" data-f="${esc(f)}"><i data-lucide="folder"></i><span>${esc(f)}</span></button>`).join('');
@@ -1105,11 +1130,27 @@ $('#segSave').addEventListener('click',e=>{const b=e.target.closest('button');if
 $('#segConc').addEventListener('click',e=>{const b=e.target.closest('button');if(b){S.concurrent=+b.dataset.c;saveS();syncSettingsUI();pump()}});
 $('#swHist').onclick=()=>{S.keepHistory=!S.keepHistory;saveS();syncSettingsUI();
   toast('info',S.keepHistory?'History is on — downloads will be recorded':'History is off — new downloads won\u2019t be recorded')};
-$('#btnUpdate').onclick=e=>{
-  const b=e.currentTarget;b.disabled=true;b.innerHTML='<i data-lucide="loader-circle" class="spin"></i>Checking…';icons();
-  setTimeout(()=>{b.disabled=false;b.innerHTML='<i data-lucide="refresh-cw"></i>Check for updates';icons();
-   toast('ok','ReClip is up to date · v1.1.0')},900);
+$('#btnAppUpdate').onclick=()=>{
+  window.open('https://github.com/bugsfreeWeb/Reclip/releases','_blank');
 };
+$('#btnYtdlpUpdate').onclick=async e=>{
+  const b=e.currentTarget;b.disabled=true;b.innerHTML='<i data-lucide="loader-circle" class="spin"></i>Updating…';icons();
+  try{
+    const res=await fetch('/api/update-ytdlp',{method:'POST'});
+    const data=await res.json();
+    if(data.ok){toast('ok','yt-dlp updated — '+data.version);loadYtdlpVer()}
+    else toast('warn',data.error||'Update failed');
+  }catch(err){toast('warn','Update failed: '+err.message)}
+  b.disabled=false;b.innerHTML='<i data-lucide="refresh-cw"></i>Update';icons();
+};
+async function loadYtdlpVer(){
+  try{
+    const res=await fetch('/api/ytdlp-version');
+    const data=await res.json();
+    const el=$('#ytdlpVer');
+    if(el)el.textContent=data.version||'unknown';
+  }catch{const el=$('#ytdlpVer');if(el)el.textContent='unknown'}
+}
 
 function setTheme(t){
   S.theme=t;document.documentElement.dataset.theme=t;saveS();
@@ -1184,6 +1225,7 @@ window.addEventListener('keydown',endSplash,{once:true});
 setTheme(S.theme);
 renderPresets();
 loadHistory().then(()=>{renderHistory();syncComposer()});
+loadYtdlpVer();
 syncSettingsUI();
 syncComposer();
 syncBatchHead();

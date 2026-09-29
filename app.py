@@ -1,9 +1,9 @@
 import os
 import sys
-import json
 import uuid
 import glob
 import threading
+import subprocess
 from pathlib import Path
 
 import yt_dlp
@@ -286,6 +286,30 @@ def preview_file(job_id):
     if not job or job["status"] != "done":
         return jsonify({"error": "File not ready"}), 404
     return send_file(job["file"])
+
+
+@app.route("/api/ytdlp-version")
+def ytdlp_version():
+    try:
+        import yt_dlp
+        return jsonify({"version": yt_dlp.version.__version__})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/update-ytdlp", methods=["POST"])
+def update_ytdlp():
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "-q", "-U", "yt-dlp"],
+            capture_output=True, text=True, timeout=120
+        )
+        if result.returncode != 0:
+            return jsonify({"error": result.stderr.strip()}), 500
+        import yt_dlp
+        return jsonify({"ok": True, "version": yt_dlp.version.__version__})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/history", methods=["GET"])
