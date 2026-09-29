@@ -1135,13 +1135,8 @@ $('#btnAppUpdate').onclick=()=>{
   window.open('https://github.com/bugsfreeWeb/Reclip/releases','_blank');
 };
 $('#extDownload').onclick=()=>{
-  const a=document.createElement('a');
-  a.href='/static/browser-extension.zip';
-  a.download='reclip-browser-extension.zip';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  toast('ok','Extension zip downloaded — load it in chrome://extensions');
+  window.open('https://github.com/bugsfreeWeb/Reclip/releases/download/v1.1.0/browser-extension.zip','_blank');
+  toast('ok','Opening extension download — load it in chrome://extensions');
 };
 function checkExtStatus(){
   const dot=$('#extDot'),status=$('#extStatus');
