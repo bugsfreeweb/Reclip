@@ -462,14 +462,6 @@ body.dnd .composer{border-style:dashed;border-color:var(--accent)}
           </div>
 
             <div class="sec">
-              <p class="sec-t">Browser extension</p>
-              <div class="srow" style="border-bottom:0">
-                <div class="l"><b><span id="extDot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--error)"></span>&nbsp;<span id="extStatus">Not installed</span></b><span>Right-click any page → "Send to ReClip", or use the toolbar icon.</span></div>
-                <div class="ctl"><button class="btn sm" id="extDownload"><i data-lucide="download"></i>Download</button></div>
-              </div>
-            </div>
-
-            <div class="sec">
               <p class="sec-t">Updates</p>
               <div class="srow">
                 <div class="l"><b>App version</b><span>ReClip v1.1.0 — check GitHub for new releases.</span></div>
@@ -1134,16 +1126,7 @@ $('#swHist').onclick=()=>{S.keepHistory=!S.keepHistory;saveS();syncSettingsUI();
 $('#btnAppUpdate').onclick=()=>{
   window.open('https://github.com/bugsfreeWeb/Reclip/releases','_blank');
 };
-$('#extDownload').onclick=()=>{
-  window.open('https://github.com/bugsfreeWeb/Reclip/releases/download/v1.1.0/browser-extension.zip','_blank');
-  toast('ok','Opening extension download — load it in chrome://extensions');
-};
-function checkExtStatus(){
-  const dot=$('#extDot'),status=$('#extStatus');
-  if(!dot||!status)return;
-  dot.style.background='var(--warn)';
-  status.textContent='Check in browser';
-}
+
 $('#btnYtdlpUpdate').onclick=async e=>{
   const b=e.currentTarget;b.disabled=true;b.innerHTML='<i data-lucide="loader-circle" class="spin"></i>Updating…';icons();
   try{
@@ -1237,7 +1220,6 @@ setTheme(S.theme);
 renderPresets();
 loadHistory().then(()=>{renderHistory();syncComposer()});
 loadYtdlpVer();
-checkExtStatus();
 syncSettingsUI();
 syncComposer();
 syncBatchHead();

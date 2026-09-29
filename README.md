@@ -35,7 +35,6 @@ A self-hosted, open-source video and audio downloader with a clean web UI. Paste
 - Format presets — save preferred quality/format combos
 - Duplicate detection — warn if URL already in history
 - Dark/light theme toggle — switch between warm beige and dark mode
-- **Browser extension** — one-click send URL to ReClip from any page
 - **Update checker** — check and update yt-dlp engine from settings
 - **Parallel downloads** — download multiple videos simultaneously
 
@@ -78,16 +77,6 @@ docker build -t reclip . && docker run -p 8899:8899 reclip
 6. Click **Download** on individual videos, or **Download All**
 7. After download, click **Save** to choose where to save the file
 8. Click **Watch** to preview the downloaded file
-
-## Browser Extension
-
-1. Download `assets/browser-extension.zip` from the repo or Settings → Browser Extension → Download
-2. Unzip the file
-3. Open `chrome://extensions` in Chrome/Edge
-4. Enable "Developer mode"
-5. Click "Load unpacked" and select the unzipped folder
-6. Right-click any video page → "Send to ReClip"
-7. Or click the extension icon to send the current tab URL
 
 ## Supported Sites
 
