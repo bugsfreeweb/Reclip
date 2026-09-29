@@ -299,6 +299,8 @@ def ytdlp_version():
 
 @app.route("/api/update-ytdlp", methods=["POST"])
 def update_ytdlp():
+    if getattr(sys, "frozen", False):
+        return jsonify({"error": "Update is only available in development mode. Download the latest ReClip.exe from GitHub releases."}), 400
     try:
         result = subprocess.run(
             [sys.executable, "-m", "pip", "install", "-q", "-U", "yt-dlp"],

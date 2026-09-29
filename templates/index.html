@@ -1138,7 +1138,9 @@ $('#extDownload').onclick=()=>{
   const a=document.createElement('a');
   a.href='/static/browser-extension.zip';
   a.download='reclip-browser-extension.zip';
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
   toast('ok','Extension zip downloaded — load it in chrome://extensions');
 };
 function checkExtStatus(){
