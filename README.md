@@ -11,7 +11,12 @@ A self-hosted, open-source video and audio downloader with a clean web UI. Paste
 
 ## Desktop App
 
-**Version 1.1.0** — A standalone desktop app bundled as a single `ReClip.exe` (Windows). No browser needed — double-click `ReClip.bat` to launch. The exe includes yt-dlp and ffmpeg built in.
+**Version 1.1.0** — A standalone desktop app for Windows. Download from [GitHub Releases](https://github.com/bugsfreeWeb/Reclip/releases):
+
+- **`ReClip_win64_v1.1.0_Setup.exe`** — Windows installer (installs to `%LOCALAPPDATA%\BugsfreeStudio\ReClip` with shortcuts)
+- **`ReClip_win64_v1.1.0.exe`** — Portable single-file exe (no installation needed)
+
+Both include yt-dlp and ffmpeg built in. Double-click `ReClip.bat` to build from source.
 
 ## Features
 
