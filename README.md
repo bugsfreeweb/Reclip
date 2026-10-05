@@ -5,16 +5,16 @@ A self-hosted, open-source video and audio downloader with a clean web UI. Paste
 ![Python](https://img.shields.io/badge/python-3.8+-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Desktop App](https://img.shields.io/badge/desktop-pyinstaller-purple)
-![Version](https://img.shields.io/badge/version-1.1.0-blue)
+![Version](https://img.shields.io/badge/version-1.2.0-blue)
 
 ![ReClip Desktop App](assets/dashboard.png)
 
 ## Desktop App
 
-**Version 1.1.0** — A standalone desktop app for Windows. Download from [GitHub Releases](https://github.com/bugsfreeWeb/Reclip/releases):
+**Version 1.2.0** — A standalone desktop app for Windows. Download from [GitHub Releases](https://github.com/bugsfreeWeb/Reclip/releases):
 
-- **`ReClip_win64_v1.1.0_Setup.exe`** — Windows installer (installs to `%LOCALAPPDATA%\BugsfreeStudio\ReClip` with shortcuts)
-- **`ReClip_win64_v1.1.0.exe`** — Portable single-file exe (no installation needed)
+- **`ReClip_win64_v1.2.0_Setup.exe`** — Windows installer (installs to `%LOCALAPPDATA%\BugsfreeStudio\ReClip` with shortcuts)
+- **`ReClip_win64_v1.2.0.exe`** — Portable single-file exe (no installation needed)
 
 Both include yt-dlp and ffmpeg built in. Double-click `ReClip.bat` to build from source.
 
@@ -66,7 +66,22 @@ cd Reclip
 
 Open **http://localhost:8899**.
 
-Or with Docker:
+### Deploy on Vercel
+
+1. Push your code to GitHub
+2. Go to [vercel.com](https://vercel.com) and import your repo
+3. Vercel auto-detects Python — no configuration needed
+4. Click Deploy
+
+Or use Vercel CLI:
+```bash
+npm i -g vercel
+vercel
+```
+
+Live demo: [reclipapp.vercel.app](https://reclipapp.vercel.app)
+
+### Docker
 
 ```bash
 docker build -t reclip . && docker run -p 8899:8899 reclip

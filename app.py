@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import uuid
 import glob
 import threading
@@ -7,7 +8,6 @@ import subprocess
 from pathlib import Path
 
 import yt_dlp
-import imageio_ffmpeg
 
 from flask import Flask, request, jsonify, send_file, render_template, send_from_directory
 from flask_cors import CORS
@@ -15,26 +15,27 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-app = Flask(__name__)
-
 if getattr(sys, "frozen", False):
     BASE_DIR = Path(sys._MEIPASS)
+    DOWNLOAD_DIR = BASE_DIR / "downloads"
+    HISTORY_FILE = BASE_DIR / "history.json"
+    TOOLS_DIR = str(BASE_DIR / "tools")
+    FFMPEG = os.path.join(TOOLS_DIR, "ffmpeg.exe")
+    if not os.path.exists(FFMPEG):
+        try:
+            import imageio_ffmpeg
+            FFMPEG = str(Path(imageio_ffmpeg.get_ffmpeg_exe()).parent / "ffmpeg.exe")
+        except Exception:
+            FFMPEG = "ffmpeg"
 else:
     BASE_DIR = Path(__file__).resolve().parent
-
-DOWNLOAD_DIR = BASE_DIR / "downloads"
-DOWNLOAD_DIR.mkdir(exist_ok=True)
-
-HISTORY_FILE = BASE_DIR / "history.json"
-
-if getattr(sys, "frozen", False):
+    DOWNLOAD_DIR = Path("/tmp/reclip/downloads")
+    HISTORY_FILE = Path("/tmp/reclip/history.json")
     TOOLS_DIR = str(BASE_DIR / "tools")
-else:
-    TOOLS_DIR = str(BASE_DIR / "tools")
+    FFMPEG = "ffmpeg"
 
-FFMPEG = os.path.join(TOOLS_DIR, "ffmpeg.exe")
-if not os.path.exists(FFMPEG):
-    FFMPEG = str(Path(imageio_ffmpeg.get_ffmpeg_exe()).parent / "ffmpeg.exe")
+DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
+HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 jobs = {}
 
