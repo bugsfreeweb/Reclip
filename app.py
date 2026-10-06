@@ -1,6 +1,8 @@
 import os
+import re
 import sys
 import json
+import time
 import uuid
 import glob
 import threading
@@ -9,7 +11,7 @@ from pathlib import Path
 
 import yt_dlp
 
-from flask import Flask, request, jsonify, send_file, render_template, send_from_directory
+from flask import Flask, request, jsonify, send_file, render_template, send_from_directory, Response
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -17,8 +19,9 @@ CORS(app)
 
 if getattr(sys, "frozen", False):
     BASE_DIR = Path(sys._MEIPASS)
-    DOWNLOAD_DIR = BASE_DIR / "downloads"
-    HISTORY_FILE = BASE_DIR / "history.json"
+    APP_HOME = Path(sys.executable).resolve().parent
+    DOWNLOAD_DIR = APP_HOME / "downloads"
+    HISTORY_FILE = APP_HOME / "history.json"
     TOOLS_DIR = str(BASE_DIR / "tools")
     FFMPEG = os.path.join(TOOLS_DIR, "ffmpeg.exe")
     if not os.path.exists(FFMPEG):
@@ -102,6 +105,8 @@ def run_download(job_id, url, format_choice, format_id, trim_start=None, trim_en
                 "player_client": ["android", "ios", "tv"],
             }
         },
+        "concurrent_fragment_downloads": 4,
+        "http_chunk_size": 10485760,
     }
     if merge_ext:
         ydl_opts["merge_output_format"] = merge_ext
@@ -132,9 +137,12 @@ def run_download(job_id, url, format_choice, format_id, trim_start=None, trim_en
                 except OSError:
                     pass
 
+        actual_size = os.path.getsize(chosen)
         job["status"] = "done"
         job["file"] = chosen
         job["progress"] = {"downloaded": 1, "total": 1, "speed": 0, "eta": 0}
+        job["actual_size"] = actual_size
+        job["total_size"] = actual_size
         ext = os.path.splitext(chosen)[1]
         title = job.get("title", "").strip()
         if title:
@@ -145,12 +153,17 @@ def run_download(job_id, url, format_choice, format_id, trim_start=None, trim_en
 
         history = load_history()
         history.insert(0, {
+            "id": uuid.uuid4().hex[:10],
             "url": url,
             "title": job.get("title", ""),
             "thumbnail": job.get("thumbnail", ""),
             "filename": job["filename"],
             "format": format_choice,
+            "q": job.get("quality", ""),
+            "size": actual_size,
+            "ts": int(time.time() * 1000),
             "timestamp": str(uuid.uuid4())[:8],
+            "savedTo": None,
         })
         save_history(history[:100])
     except Exception as e:
@@ -269,6 +282,7 @@ def start_download():
         "status": "downloading",
         "url": url,
         "title": title,
+        "quality": format_id or "",
         "thumbnail": thumbnail,
         "progress": {"downloaded": 0, "total": 0, "speed": 0, "eta": 0},
     }
@@ -290,6 +304,8 @@ def check_status(job_id):
         "error": job.get("error"),
         "filename": job.get("filename"),
         "progress": job.get("progress", {}),
+        "actual_size": job.get("actual_size", 0),
+        "size": job.get("actual_size", 0),
     })
 
 
@@ -306,7 +322,41 @@ def preview_file(job_id):
     job = jobs.get(job_id)
     if not job or job["status"] != "done":
         return jsonify({"error": "File not ready"}), 404
-    return send_file(job["file"])
+    
+    file_path = job["file"]
+    if not os.path.exists(file_path):
+        return jsonify({"error": "File not found"}), 404
+    
+    # Support range requests for video streaming
+    file_size = os.path.getsize(file_path)
+    range_header = request.headers.get('Range', None)
+
+    if range_header:
+        match = re.search(r'bytes=(\d+)-(\d*)', range_header)
+        if match:
+            g = match.groups()
+            byte1 = int(g[0]) if g[0] else 0
+            byte2 = int(g[1]) if g[1] else file_size - 1
+            byte1 = max(0, min(byte1, file_size - 1))
+            byte2 = min(byte2, file_size - 1)
+            length = byte2 - byte1 + 1
+            with open(file_path, 'rb') as f:
+                f.seek(byte1)
+                data = f.read(length)
+            rv = Response(
+                data, 206, mimetype='video/mp4',
+                headers={
+                    'Content-Range': f'bytes {byte1}-{byte2}/{file_size}',
+                    'Accept-Ranges': 'bytes',
+                    'Content-Length': str(length),
+                },
+            )
+            return rv
+
+    mimetype = 'audio/mpeg' if file_path.endswith('.mp3') else 'video/mp4'
+    response = send_file(file_path, mimetype=mimetype)
+    response.headers['Accept-Ranges'] = 'bytes'
+    return response
 
 
 @app.route("/api/ytdlp-version")
