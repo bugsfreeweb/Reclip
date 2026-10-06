@@ -21,19 +21,28 @@ def _ffmpeg_works(path):
     try:
         if not path or not os.path.exists(path):
             return False
-        r = subprocess.run([path, "-version"], capture_output=True, timeout=10)
+        r = subprocess.run([path, "-version"], capture_output=True, timeout=15)
         return r.returncode == 0
     except Exception:
         return False
 
 
 def _resolve_ffmpeg(candidates):
+    # 1. Explicit bundled / installed candidates (verified by execution).
     for c in candidates:
         if _ffmpeg_works(c):
             return c
+    # 2. Anything already on PATH (e.g. user-installed ffmpeg, like the
+    #    original reclip.sh setup expects).
     import shutil
     found = shutil.which("ffmpeg")
-    return found or ""
+    if found:
+        return found
+    # 3. Last resort: first candidate that at least exists — let yt-dlp try.
+    for c in candidates:
+        if c and os.path.exists(c):
+            return c
+    return ""
 
 
 if getattr(sys, "frozen", False):
@@ -66,6 +75,12 @@ else:
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
 
+# Make the bundled ffmpeg discoverable the same way the original
+# reclip.sh setup does (ffmpeg on PATH).
+for _tools_dir in {TOOLS_DIR, str(DOWNLOAD_DIR.parent / "tools")}:
+    if _tools_dir and os.path.isdir(_tools_dir):
+        os.environ["PATH"] = _tools_dir + os.pathsep + os.environ.get("PATH", "")
+
 APP_VERSION = "1.2.0"
 jobs = {}
 
@@ -78,9 +93,13 @@ def friendly_ydl_error(err):
     low = msg.lower()
     if "sign in to confirm you" in low and "bot" in low:
         return ("YouTube is asking for bot verification on this network "
-                "(tried embedded/mobile/TV players and browser cookies). "
+                "(tried the default player, embedded/mobile/TV players and browser cookies). "
                 "Wait a few minutes and retry, try MP3/audio only, or update yt-dlp. "
                 "Staying signed in to YouTube in Chrome/Edge on this PC gives the best chance.")
+    if "ffmpeg" in low and ("not installed" in low or "not found" in low or "merg" in low):
+        return ("Video+audio merge needs ffmpeg, which ReClip could not find. "
+                "Reinstall ReClip (ffmpeg ships inside), or place ffmpeg.exe next to ReClip.exe, then retry. "
+                f"Original error: {msg[:160]}")
     if "unsupported url" in low:
         return "This URL is not supported."
     if "private" in low:
@@ -141,10 +160,11 @@ def download_with_client_fallback(ydl_opts, url, job=None):
             "Too many YouTube bot-blocks in a row — waiting a few minutes "
             "before retrying so the IP is not flagged further."
         )
-    opts = dict(ydl_opts)
-    opts["extractor_args"] = {"youtube": {"player_client": list(PLAYER_CLIENTS)}}
+    # Pass 1: exactly like the original reclip (default player client).
+    base_opts = dict(ydl_opts)
+    base_opts.pop("extractor_args", None)
     try:
-        with yt_dlp.YoutubeDL(opts) as ydl:
+        with yt_dlp.YoutubeDL(base_opts) as ydl:
             ydl.download([url])
         return
     except Exception as e:
@@ -154,6 +174,16 @@ def download_with_client_fallback(ydl_opts, url, job=None):
         if job is not None:
             job["progress"] = {"downloaded": 0, "total": 0, "speed": 0, "eta": 0}
         last_err = e
+        # Pass 2: alternate player clients (embedded/mobile/TV).
+        try:
+            opts = dict(ydl_opts)
+            opts["extractor_args"] = {"youtube": {"player_client": list(PLAYER_CLIENTS)}}
+            with yt_dlp.YoutubeDL(opts) as ydl:
+                ydl.download([url])
+            return
+        except Exception as ce:
+            last_err = ce
+        # Pass 3: same clients + signed-in browser cookies.
         for browser in COOKIE_BROWSERS:
             try:
                 cookie_opts = dict(ydl_opts)
@@ -218,7 +248,6 @@ def run_download(job_id, url, format_choice, format_id, trim_start=None, trim_en
         "noplaylist": True,
         "quiet": True,
         "no_warnings": True,
-        "ffmpeg_location": FFMPEG,
         "postprocessors": postprocessors,
         "progress_hooks": [progress_hook],
         "writesubtitles": subtitles,
@@ -238,14 +267,10 @@ def run_download(job_id, url, format_choice, format_id, trim_start=None, trim_en
     }
     if merge_ext:
         ydl_opts["merge_output_format"] = merge_ext
+    if FFMPEG and _ffmpeg_works(FFMPEG):
+        ydl_opts["ffmpeg_location"] = FFMPEG
     if trim_start and trim_end:
         ydl_opts["download_ranges"] = [{"start_time": trim_start, "end_time": trim_end}]
-
-    if not FFMPEG or not _ffmpeg_works(FFMPEG):
-        job["status"] = "error"
-        job["error"] = ("ffmpeg was not found, so video+audio cannot be merged. "
-                        "Reinstall ReClip or place ffmpeg.exe next to ReClip.exe, then retry.")
-        return
 
     for stale in glob.glob(str(DOWNLOAD_DIR / f"{job_id}.*")):
         try:
@@ -345,20 +370,19 @@ def get_info():
         "no_warnings": True,
         "noplaylist": True,
         "skip_download": True,
-        "ffmpeg_location": FFMPEG,
-        "extractor_args": {
-            "youtube": {
-                "player_client": ["android"],
-            }
-        },
     }
+    if FFMPEG:
+        ydl_opts["ffmpeg_location"] = FFMPEG
     try:
         info = None
         last_err = None
-        for clients_set in (["android"], ["ios"], ["tv"], ["web"]):
+        for clients_set in (None, ["web_embedded"], ["android"], ["ios"], ["tv"]):
             try:
                 opts = dict(ydl_opts)
-                opts["extractor_args"] = {"youtube": {"player_client": clients_set}}
+                if clients_set is None:
+                    opts.pop("extractor_args", None)
+                else:
+                    opts["extractor_args"] = {"youtube": {"player_client": clients_set}}
                 with yt_dlp.YoutubeDL(opts) as ydl:
                     info = ydl.extract_info(url, download=False)
                 break
@@ -378,10 +402,12 @@ def get_info():
 
         formats = []
         for height, f in best_by_height.items():
+            size = f.get("filesize") or f.get("filesize_approx") or 0
             formats.append({
                 "id": f["format_id"],
                 "label": f"{height}p",
                 "height": height,
+                "size": size,
             })
         formats.sort(key=lambda x: x["height"], reverse=True)
 

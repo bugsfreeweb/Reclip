@@ -725,8 +725,12 @@ function emptyStateUpdate(){
 }
 
 function makeItem(url,info){
-  return{id:uid(),url,site:siteOf(url),title:info.title||'',ch:info.uploader||'',thumbnail:info.thumbnail||'',meta:'',dur:info.duration||0,seed:'reclip-'+hash(url),qs:(info.formats||[]).map(f=>f.label),
-   fmt:opts.fmt,subs:opts.subs,clip:opts.clip,cs:opts.start,ce:opts.end,quality:'Best',state:'idle'}}
+  const formats=(info.formats||[]).map(f=>({id:f.id,label:f.label,size:f.size||0}));
+  return{id:uid(),url,site:siteOf(url),title:info.title||'',ch:info.uploader||'',thumbnail:info.thumbnail||'',meta:'',dur:info.duration||0,seed:'reclip-'+hash(url),qs:formats.map(f=>f.label),formats,
+   fmt:opts.fmt,subs:opts.subs,clip:opts.clip,cs:opts.start,ce:opts.end,quality:'Best',formatId:null,qIndex:0,state:'idle'}}
+function fmtOptLabel(f){
+  return f.size>0?`${f.label} · ${fmtSize(f.size)}`:f.label;
+}
 function makeSkeleton(){const d=document.createElement('div');d.className='card skel';
   d.innerHTML=`<div class="thumb sk"></div><div class="c-info"><div class="sk" style="width:70%;height:15px"></div><div class="sk" style="width:42%;height:10px;margin-top:9px"></div><div class="sk" style="width:30%;height:10px;margin-top:14px"></div></div><div class="c-side"><div class="sk" style="height:29px"></div><div class="sk" style="height:30px;margin-top:8px"></div></div>`;
   return d}
@@ -741,7 +745,7 @@ function buildCard(it){
   const el=document.createElement('article');el.className='card st-'+it.state;el.dataset.id=it.id;
   el.innerHTML=`
    <div class="thumb">
-     <img src="https://picsum.photos/seed/${it.seed}/480/270.jpg" alt="">
+     <img src="${it.thumbnail||('https://picsum.photos/seed/'+it.seed+'/480/270.jpg')}" alt="" loading="lazy" onerror="this.onerror=null;this.src='https://picsum.photos/seed/'+'${it.seed}'+'/480/270.jpg'">
      <span class="t-site">${esc(it.site)}</span><span class="t-dur">${fmtDur(it.dur)}</span>
      <span class="clip-mk" hidden></span><span class="clip-mk" hidden></span>
    </div>
@@ -762,14 +766,17 @@ function renderMarkers(it){
   }else it.$mks.forEach(m=>m.hidden=true);
 }
 function qOptions(it){
-  return it.fmt==='mp3'
-   ?['Best (320)','192 kbps','128 kbps']
-   :['Best',...(it.qs||['1080p','720p','480p'])];
+  if(it.fmt==='mp3')
+    return[{value:'',label:'Best (320)'},{value:'',label:'192 kbps'},{value:'',label:'128 kbps'}];
+  const list=[{value:'',label:'Best'}];
+  for(const f of (it.formats||[])) list.push({value:f.id,label:fmtOptLabel(f)});
+  if(!list.length||list.length===1) for(const q of (it.qs||['1080p','720p','480p'])) list.push({value:'',label:q});
+  return list;
 }
 function renderSide(it){
   if(!it.$side)return;
   if(it.state==='idle'){
-   it.$side.innerHTML=`<div class="sel"><select>${qOptions(it).map(o=>`<option${o===it.quality?' selected':''}>${o}</option>`).join('')}</select><i data-lucide="chevron-down"></i></div>
+   it.$side.innerHTML=`<div class="sel"><select>${qOptions(it).map((o,i)=>`<option value="${i}"${(it.qIndex||0)===i?' selected':''} data-fid="${esc(o.value)}">${esc(o.label)}</option>`).join('')}</select><i data-lucide="chevron-down"></i></div>
    <button class="btn primary sm" data-act="dl"><i data-lucide="download"></i>Download</button>`;
   }else if(it.state==='queued'){
    it.$side.innerHTML=`<div class="dl-wrap"><span class="dl-q">QUEUED</span><button class="icon-btn sm" data-act="cancel" title="Cancel"><i data-lucide="x"></i></button></div>`;
@@ -800,7 +807,11 @@ cardsEl.addEventListener('click',e=>{
 cardsEl.addEventListener('change',e=>{
   if(!e.target.matches('.c-side select'))return;
   const it=batch.find(x=>x.id===e.target.closest('.card')?.dataset.id);if(!it)return;
-  it.quality=e.target.value;renderTags(it);syncBatchHead();
+  const opt=e.target.selectedOptions[0];
+  it.qIndex=+e.target.value||0;
+  it.formatId=opt?.dataset?.fid||null;
+  it.quality=opt?opt.textContent:'Best';
+  renderTags(it);syncBatchHead();
 });
 
 async function doFetch(){
@@ -859,7 +870,7 @@ function enqueue(it){
 async function startDownload(it){
   try{
     const res=await fetch('/api/download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      url:it.url,format:it.fmt,format_id:it.quality!=='Best'?it.quality:null,
+      url:it.url,format:it.fmt,format_id:it.formatId||null,
       title:it.title,thumbnail:'',trim_start:it.clip?it.cs:null,trim_end:it.clip?it.ce:null,subtitles:it.subs
     })});
     const data=await res.json();
@@ -1059,7 +1070,7 @@ function disarm(){clearTimeout(armT);hClear.classList.remove('arm');hClear.inner
 function reDownload(h){
   setView('dl');
   const it={id:uid(),url:h.url,site:h.site,title:h.title,ch:h.ch,meta:'from history',dur:h.dur,seed:h.seed,qs:h.qs||['1080p','720p','480p'],
-   fmt:h.fmt,subs:false,clip:false,cs:0,ce:0,quality:(h.q&&h.q!=='Best')?h.q:'Best',state:'idle'};
+   fmt:h.fmt,subs:false,clip:false,cs:0,ce:0,quality:'Best',formatId:null,qIndex:0,state:'idle'};
   batch.push(it);
   const sk=makeSkeleton();cardsEl.appendChild(sk);emptyEl.hidden=true;
   setTimeout(()=>{sk.replaceWith(buildCard(it));enqueue(it);syncBatchHead();icons()},260);
