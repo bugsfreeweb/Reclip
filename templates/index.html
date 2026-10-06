@@ -3,7 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ReClip — Desktop</title>
+<title>ReClip — Free Video & Audio Downloader (YouTube, TikTok, Instagram, 1000+ sites)</title>
+<meta name="description" content="ReClip is a free, open-source video and audio downloader. Download from YouTube, TikTok, Instagram, Twitter/X, and 1000+ sites as MP4 or MP3. Desktop app and web version available.">
+<meta name="keywords" content="video downloader, audio downloader, youtube downloader, tiktok downloader, instagram downloader, mp4, mp3, free downloader, open source">
+<meta name="author" content="Bugsfree Studio">
+<meta property="og:title" content="ReClip — Free Video & Audio Downloader">
+<meta property="og:description" content="Download videos and audio from 1000+ sites. Free, open-source, no ads.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="/static/icon.ico">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ReClip — Free Video & Audio Downloader">
+<meta name="twitter:description" content="Download from YouTube, TikTok, Instagram, 1000+ sites as MP4 or MP3.">
 <link rel="icon" href="/static/icon.ico" type="image/x-icon">
 <script>try{const t=JSON.parse(localStorage.getItem('reclip.settings')||'{}').theme;if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -305,6 +315,12 @@ body.dnd .composer{border-style:dashed;border-color:var(--accent)}
 @keyframes particle{0%{opacity:0;transform:scale(0) translateY(0)}20%{opacity:.6}100%{opacity:0;transform:scale(1) translateY(-40px)}}
 #grain{position:fixed;inset:0;z-index:300;pointer-events:none;opacity:var(--grain);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E")}
 
+.footer{position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--header-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--card-border);padding:10px 24px;text-align:center;font-size:0.65rem;color:var(--muted);letter-spacing:0.05em;line-height:1.8;flex-shrink:0}
+.footer-links{margin-bottom:4px}
+.footer-links a{color:var(--muted);text-decoration:none;transition:color 0.2s}
+.footer-links a:hover{color:var(--accent)}
+.footer-sep{margin:0 6px;opacity:0.4}
+.footer-info strong{color:var(--ink2)}
 @media(max-width:820px){.view{padding:16px 14px 26px}.card{grid-template-columns:128px 1fr}.thumb{width:128px;height:74px}.c-side{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap}.c-done-size{text-align:left}.dl-wrap{min-width:230px}.hrow{grid-template-columns:72px 1fr auto}.h-thumb{width:72px;height:42px}}
 {% endraw %}
 </style>
@@ -316,7 +332,7 @@ body.dnd .composer{border-style:dashed;border-color:var(--accent)}
     <div class="brand">
       <svg class="mark" viewBox="0 0 64 64" fill="none" aria-hidden="true"><rect x="9" y="10" width="46" height="15" rx="4.5" stroke="currentColor" stroke-width="3"/><path d="M19 11.5 25 24M31 11.5 37 24M43 11.5 49 24" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/><rect x="9" y="29" width="46" height="25" rx="4.5" stroke="currentColor" stroke-width="3"/><path d="M27 36.5v10l9-5z" fill="var(--accent)"/></svg>
       <span class="b-name">ReClip</span>
-      <span class="b-tag">v1.2.0</span>
+      <span class="b-tag">v{{ version }}</span>
     </div>
     <div class="tb-drag"></div>
     <span id="queuePill" hidden></span>
@@ -543,6 +559,61 @@ body.dnd .composer{border-style:dashed;border-color:var(--accent)}
 
 <div id="toasts"></div>
 
+<div class="footer">
+  <div class="footer-links">
+    <a href="#" onclick="openAbout();return false;">About</a>
+    <span class="footer-sep">·</span>
+    <a href="#" onclick="openDisclaimer();return false;">Disclaimer</a>
+    <span class="footer-sep">·</span>
+    <a href="https://github.com/bugsfreeWeb/Reclip/releases" target="_blank">Windows App</a>
+  </div>
+  <div class="footer-info">
+    <span id="footerVersion">v{{ version }}</span>
+    <span class="footer-sep">·</span>
+    <span>Organized By <strong>Bugsfree Studio</strong></span>
+  </div>
+</div>
+
+<div class="modal" id="mAbout" hidden>
+  <div class="m-back" data-close></div>
+  <div class="m-box" style="width:min(520px,92vw)">
+    <div class="m-head"><span class="m-title">About ReClip</span><button class="icon-btn" data-close><i data-lucide="x"></i></button></div>
+    <div class="m-body">
+      <div style="text-align:center;padding:20px 0">
+        <svg class="mark" viewBox="0 0 64 64" fill="none" aria-hidden="true" style="width:64px;height:64px;margin:0 auto 16px">
+          <rect x="9" y="10" width="46" height="15" rx="4.5" stroke="currentColor" stroke-width="3"/>
+          <path d="M19 11.5 25 24M31 11.5 37 24M43 11.5 49 24" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>
+          <rect x="9" y="29" width="46" height="25" rx="4.5" stroke="currentColor" stroke-width="3"/>
+          <path d="M27 36.5v10l9-5z" fill="var(--accent)"/>
+        </svg>
+        <h3 style="font:700 20px 'Bricolage Grotesque';margin-bottom:8px">ReClip <span id="aboutVersion" style="color:var(--accent-ink)"></span></h3>
+        <p style="font:400 13px 'Bricolage Grotesque';color:var(--ink2);line-height:1.6">Free, open-source video and audio downloader.<br>Download from 1000+ sites as MP4 or MP3.</p>
+        <div style="margin-top:20px;font:500 11px 'IBM Plex Mono',monospace;color:var(--ink3)">
+          YT-DLP + FFMPEG · PYWEBVIEW · MIT LICENSE
+        </div>
+        <div style="margin-top:16px;font:500 11px 'IBM Plex Mono',monospace;color:var(--ink3)">
+          ORGANIZED BY BUGSFREE STUDIO
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="mDisclaimer" hidden>
+  <div class="m-back" data-close></div>
+  <div class="m-box" style="width:min(520px,92vw)">
+    <div class="m-head"><span class="m-title">Disclaimer</span><button class="icon-btn" data-close><i data-lucide="x"></i></button></div>
+    <div class="m-body">
+      <div style="font:400 13px 'Bricolage Grotesque';color:var(--ink2);line-height:1.8">
+        <p style="margin-bottom:12px"><strong style="color:var(--ink)">ReClip</strong> is intended for <strong>personal use only</strong>. Please respect copyright laws and the terms of service of the platforms you download from.</p>
+        <p style="margin-bottom:12px">The developers are <strong>not responsible</strong> for any misuse of this tool. Downloading copyrighted content without permission may violate laws in your jurisdiction.</p>
+        <p style="margin-bottom:12px">By using this application, you acknowledge that you are responsible for ensuring your use of downloaded content complies with applicable laws and platform terms of service.</p>
+        <p style="font:500 11px 'IBM Plex Mono',monospace;color:var(--ink3);margin-top:16px">ORGANIZED BY BUGSFREE STUDIO · MIT LICENSE</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="splash">
   <div class="s-in">
     <div class="particles">
@@ -562,7 +633,7 @@ body.dnd .composer{border-style:dashed;border-color:var(--accent)}
     </svg>
     <div class="s-word"><l style="--i:0">R</l><l style="--i:1">e</l><l style="--i:2">C</l><l style="--i:3">l</l><l style="--i:4">i</l><l style="--i:5">p</l></div>
     <div class="s-line"></div>
-    <div class="s-sub">SELF-HOSTED DOWNLOADER · v1.2.0</div>
+    <div class="s-sub">SELF-HOSTED DOWNLOADER · v{{ version }}</div>
     <div class="s-credit">RECLIP (INSPIRED PROJECT) · ORGANIZED BY BUGSFREE STUDIO</div>
   </div>
 </div>
@@ -1014,6 +1085,13 @@ function reDownload(h){
 }
 
 function openM(m){m.hidden=false;requestAnimationFrame(()=>m.classList.add('in'))}
+function openAbout(){
+  document.getElementById('aboutVersion').textContent='v{{ version }}';
+  openM(document.getElementById('mAbout'));
+}
+function openDisclaimer(){
+  openM(document.getElementById('mDisclaimer'));
+}
 function closeM(m){m.classList.remove('in');setTimeout(()=>m.hidden=true,180);if(m.id==='mWatch')stopPreview()}
 document.addEventListener('click',e=>{
   const c=e.target.closest('[data-close]');if(!c)return;

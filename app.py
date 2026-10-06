@@ -37,6 +37,7 @@ else:
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
 
+APP_VERSION = "1.2.0"
 jobs = {}
 
 
@@ -96,6 +97,11 @@ def run_download(job_id, url, format_choice, format_id, trim_start=None, trim_en
         "writesubtitles": subtitles,
         "subtitleslangs": ["en"] if subtitles else None,
         "subtitlesformat": "srt/vtt/best",
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android", "ios", "tv"],
+            }
+        },
     }
     if merge_ext:
         ydl_opts["merge_output_format"] = merge_ext
@@ -154,7 +160,7 @@ def run_download(job_id, url, format_choice, format_id, trim_start=None, trim_en
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", version=APP_VERSION)
 
 
 @app.route("/static/<path:filename>")
@@ -175,6 +181,11 @@ def get_info():
         "noplaylist": True,
         "skip_download": True,
         "ffmpeg_location": FFMPEG,
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android", "ios", "tv"],
+            }
+        },
     }
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -221,6 +232,11 @@ def get_playlist_info():
         "extract_flat": True,
         "skip_download": True,
         "ffmpeg_location": FFMPEG,
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android", "ios", "tv"],
+            }
+        },
     }
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
