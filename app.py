@@ -43,6 +43,62 @@ HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
 APP_VERSION = "1.2.0"
 jobs = {}
 
+MEDIA_EXTS = (".mp4", ".mkv", ".webm", ".mp3", ".m4a", ".opus", ".ogg")
+SKIP_EXTS = (".srt", ".vtt", ".json", ".part", ".ytdl", ".temp", ".tmp")
+
+
+def friendly_ydl_error(err):
+    msg = str(err)
+    low = msg.lower()
+    if "sign in to confirm you" in low and "bot" in low:
+        return ("YouTube is asking for bot verification on this network. "
+                "Try again later, try MP3/audio only, or update yt-dlp. "
+                "If it persists, exporting browser cookies usually fixes it.")
+    if "unsupported url" in low:
+        return "This URL is not supported."
+    if "private" in low:
+        return "This video is private."
+    if "unavailable" in low:
+        return "Video is unavailable."
+    if "403" in low:
+        return "Access denied by the platform (403)."
+    if "404" in low:
+        return "Video not found (404)."
+    if "timed out" in low or "timed out" in msg:
+        return "Request timed out — try again."
+    return msg[:300]
+
+
+def pick_media_file(files, format_choice):
+    media = [f for f in files
+             if f.lower().endswith(MEDIA_EXTS)
+             and not f.lower().endswith(SKIP_EXTS)]
+    if not media:
+        return None
+    if format_choice == "audio":
+        audio = [f for f in media if f.lower().endswith((".mp3", ".m4a", ".opus", ".ogg"))]
+        return audio[0] if audio else None
+    video = [f for f in media if f.lower().endswith((".mp4", ".mkv", ".webm"))]
+    return video[0] if video else media[0]
+
+
+def download_with_client_fallback(ydl_opts, url, job=None):
+    clients = [["android"], ["ios"], ["tv"], ["web"]]
+    last_err = None
+    for clients_set in clients:
+        opts = dict(ydl_opts)
+        opts["extractor_args"] = {"youtube": {"player_client": clients_set}}
+        try:
+            with yt_dlp.YoutubeDL(opts) as ydl:
+                ydl.download([url])
+            return
+        except Exception as e:
+            last_err = e
+            if job is not None:
+                job["progress"] = {"downloaded": 0, "total": 0, "speed": 0, "eta": 0}
+            continue
+    raise last_err
+
 
 def load_history():
     if HISTORY_FILE.exists():
@@ -102,7 +158,7 @@ def run_download(job_id, url, format_choice, format_id, trim_start=None, trim_en
         "subtitlesformat": "srt/vtt/best",
         "extractor_args": {
             "youtube": {
-                "player_client": ["android", "ios", "tv"],
+                "player_client": ["android"],
             }
         },
         "concurrent_fragment_downloads": 4,
@@ -114,8 +170,7 @@ def run_download(job_id, url, format_choice, format_id, trim_start=None, trim_en
         ydl_opts["download_ranges"] = [{"start_time": trim_start, "end_time": trim_end}]
 
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
+        download_with_client_fallback(ydl_opts, url, job)
 
         files = glob.glob(str(DOWNLOAD_DIR / f"{job_id}.*"))
         if not files:
@@ -123,12 +178,11 @@ def run_download(job_id, url, format_choice, format_id, trim_start=None, trim_en
             job["error"] = "Download completed but no file was found"
             return
 
-        if format_choice == "audio":
-            target = [f for f in files if f.endswith(".mp3")]
-            chosen = target[0] if target else files[0]
-        else:
-            target = [f for f in files if f.endswith(".mp4")]
-            chosen = target[0] if target else files[0]
+        chosen = pick_media_file(files, format_choice)
+        if not chosen:
+            job["status"] = "error"
+            job["error"] = "Download produced no playable media file (only subtitles/metadata found)"
+            return
 
         for f in files:
             if f != chosen:
@@ -138,6 +192,14 @@ def run_download(job_id, url, format_choice, format_id, trim_start=None, trim_en
                     pass
 
         actual_size = os.path.getsize(chosen)
+        if actual_size < 1024:
+            job["status"] = "error"
+            job["error"] = f"Downloaded file is incomplete ({actual_size} bytes). Try again or pick another quality."
+            try:
+                os.remove(chosen)
+            except OSError:
+                pass
+            return
         job["status"] = "done"
         job["file"] = chosen
         job["progress"] = {"downloaded": 1, "total": 1, "speed": 0, "eta": 0}
@@ -168,7 +230,7 @@ def run_download(job_id, url, format_choice, format_id, trim_start=None, trim_en
         save_history(history[:100])
     except Exception as e:
         job["status"] = "error"
-        job["error"] = str(e)
+        job["error"] = friendly_ydl_error(e)
 
 
 @app.route("/")
@@ -196,13 +258,25 @@ def get_info():
         "ffmpeg_location": FFMPEG,
         "extractor_args": {
             "youtube": {
-                "player_client": ["android", "ios", "tv"],
+                "player_client": ["android"],
             }
         },
     }
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
+        info = None
+        last_err = None
+        for clients_set in (["android"], ["ios"], ["tv"], ["web"]):
+            try:
+                opts = dict(ydl_opts)
+                opts["extractor_args"] = {"youtube": {"player_client": clients_set}}
+                with yt_dlp.YoutubeDL(opts) as ydl:
+                    info = ydl.extract_info(url, download=False)
+                break
+            except Exception as e:
+                last_err = e
+                continue
+        if info is None:
+            raise last_err
 
         best_by_height = {}
         for f in info.get("formats", []):
@@ -229,7 +303,7 @@ def get_info():
             "formats": formats,
         })
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": friendly_ydl_error(e)}), 400
 
 
 @app.route("/api/playlist", methods=["POST"])
