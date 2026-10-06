@@ -18,6 +18,13 @@ A self-hosted, open-source video and audio downloader with a clean web UI. Paste
 
 Both include yt-dlp and ffmpeg built in. Double-click `ReClip.bat` to build from source.
 
+> **Portable use:** keep `ffmpeg.exe` next to `ReClip_win64_v1.2.0.exe` (both are in the release). The installer already does this for you.
+
+## Troubleshooting
+
+- **"ffmpeg was not found, so video+audio cannot be merged"** — make sure `ffmpeg.exe` sits next to `ReClip.exe` (or reinstall via `ReClip_win64_v1.2.0_Setup.exe`). If it still fails, your antivirus may be blocking the bundled ffmpeg — allow it and retry. Check Settings → yt-dlp engine, or open `/api/diagnostics` while the app runs to see exactly which ffmpeg path was picked.
+- **"YouTube is asking for bot verification"** — YouTube sometimes flags networks/IPs. ReClip automatically retries with embedded/mobile/TV players and your signed-in browser cookies (Chrome/Edge/Firefox). Best chance: stay signed in to YouTube in Chrome or Edge on the same PC, wait a few minutes, then retry. MP3/audio-only often works when video is blocked.
+
 ## Features
 
 - Download videos from 1000+ supported sites (via [yt-dlp](https://github.com/yt-dlp/yt-dlp))

@@ -24,5 +24,8 @@ Write-Host "Building ReClip desktop app..." -ForegroundColor Cyan
     --hidden-import webview `
     desktop.py
 
+Copy-Item "dist\ReClip.exe" "dist\ReClip_win64_v1.2.0.exe" -Force
+Copy-Item "tools\ffmpeg.exe" "dist\ffmpeg.exe" -Force
+
 Write-Host ""
-Write-Host "Build complete: dist\ReClip.exe" -ForegroundColor Green
+Write-Host "Build complete: dist\ReClip_win64_v1.2.0.exe (+ dist\ffmpeg.exe keep them together)" -ForegroundColor Green

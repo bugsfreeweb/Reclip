@@ -52,8 +52,8 @@ if getattr(sys, "frozen", False):
     HISTORY_FILE = APP_HOME / "history.json"
     TOOLS_DIR = str(BASE_DIR / "tools")
     _ffmpeg_candidates = [
-        os.path.join(str(APP_HOME / "tools"), "ffmpeg.exe"),
         os.path.join(str(APP_HOME), "ffmpeg.exe"),
+        os.path.join(str(APP_HOME / "tools"), "ffmpeg.exe"),
         os.path.join(TOOLS_DIR, "ffmpeg.exe"),
     ]
     try:
@@ -268,7 +268,8 @@ def run_download(job_id, url, format_choice, format_id, trim_start=None, trim_en
     if merge_ext:
         ydl_opts["merge_output_format"] = merge_ext
     if FFMPEG and _ffmpeg_works(FFMPEG):
-        ydl_opts["ffmpeg_location"] = FFMPEG
+        # Classic directory form, exactly like --ffmpeg-location on the CLI.
+        ydl_opts["ffmpeg_location"] = os.path.dirname(FFMPEG) if os.path.isfile(FFMPEG) else FFMPEG
     if trim_start and trim_end:
         ydl_opts["download_ranges"] = [{"start_time": trim_start, "end_time": trim_end}]
 
@@ -432,9 +433,8 @@ def get_playlist_info():
     ydl_opts = {
         "quiet": True,
         "no_warnings": True,
-        "extract_flat": True,
+        "noplaylist": True,
         "skip_download": True,
-        "ffmpeg_location": FFMPEG,
         "extractor_args": {
             "youtube": {
                 "player_client": ["android", "ios", "tv"],
@@ -556,6 +556,41 @@ def ytdlp_version():
         return jsonify({"version": yt_dlp.version.__version__})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/diagnostics")
+def diagnostics():
+    import shutil
+    cands = []
+    if getattr(sys, "frozen", False):
+        app_home = str(Path(sys.executable).resolve().parent)
+        meipass = str(Path(sys._MEIPASS))
+        raw = [
+            os.path.join(app_home, "ffmpeg.exe"),
+            os.path.join(app_home, "tools", "ffmpeg.exe"),
+            os.path.join(meipass, "tools", "ffmpeg.exe"),
+        ]
+        try:
+            import imageio_ffmpeg
+            raw.append(imageio_ffmpeg.get_ffmpeg_exe())
+        except Exception as e:
+            raw.append(f"<imageio error: {e}>")
+    else:
+        raw = [os.path.join(TOOLS_DIR, "ffmpeg.exe")]
+    for c in raw:
+        exists = bool(c) and os.path.exists(c)
+        cands.append({"path": c, "exists": exists, "works": _ffmpeg_works(c) if exists else False})
+    return jsonify({
+        "app_version": APP_VERSION,
+        "frozen": getattr(sys, "frozen", False),
+        "ffmpeg_in_use": FFMPEG,
+        "ffmpeg_works": _ffmpeg_works(FFMPEG),
+        "candidates": cands,
+        "path_ffmpeg": shutil.which("ffmpeg"),
+        "download_dir": str(DOWNLOAD_DIR),
+        "download_dir_writable": os.access(str(DOWNLOAD_DIR), os.W_OK),
+        "yt_dlp": __import__("yt_dlp").version.__version__,
+    })
 
 
 @app.route("/api/update-ytdlp", methods=["POST"])
