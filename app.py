@@ -17,25 +17,51 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
+def _ffmpeg_works(path):
+    try:
+        if not path or not os.path.exists(path):
+            return False
+        r = subprocess.run([path, "-version"], capture_output=True, timeout=10)
+        return r.returncode == 0
+    except Exception:
+        return False
+
+
+def _resolve_ffmpeg(candidates):
+    for c in candidates:
+        if _ffmpeg_works(c):
+            return c
+    import shutil
+    found = shutil.which("ffmpeg")
+    return found or ""
+
+
 if getattr(sys, "frozen", False):
     BASE_DIR = Path(sys._MEIPASS)
     APP_HOME = Path(sys.executable).resolve().parent
     DOWNLOAD_DIR = APP_HOME / "downloads"
     HISTORY_FILE = APP_HOME / "history.json"
     TOOLS_DIR = str(BASE_DIR / "tools")
-    FFMPEG = os.path.join(TOOLS_DIR, "ffmpeg.exe")
-    if not os.path.exists(FFMPEG):
-        try:
-            import imageio_ffmpeg
-            FFMPEG = str(Path(imageio_ffmpeg.get_ffmpeg_exe()).parent / "ffmpeg.exe")
-        except Exception:
-            FFMPEG = "ffmpeg"
+    _ffmpeg_candidates = [
+        os.path.join(str(APP_HOME / "tools"), "ffmpeg.exe"),
+        os.path.join(str(APP_HOME), "ffmpeg.exe"),
+        os.path.join(TOOLS_DIR, "ffmpeg.exe"),
+    ]
+    try:
+        import imageio_ffmpeg
+        _ffmpeg_candidates.append(imageio_ffmpeg.get_ffmpeg_exe())
+    except Exception:
+        pass
+    FFMPEG = _resolve_ffmpeg(_ffmpeg_candidates)
 else:
     BASE_DIR = Path(__file__).resolve().parent
     DOWNLOAD_DIR = Path("/tmp/reclip/downloads")
     HISTORY_FILE = Path("/tmp/reclip/history.json")
     TOOLS_DIR = str(BASE_DIR / "tools")
-    FFMPEG = "ffmpeg"
+    FFMPEG = _resolve_ffmpeg([
+        os.path.join(TOOLS_DIR, "ffmpeg.exe"),
+        os.path.join(TOOLS_DIR, "ffmpeg"),
+    ]) or "ffmpeg"
 
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -51,9 +77,10 @@ def friendly_ydl_error(err):
     msg = str(err)
     low = msg.lower()
     if "sign in to confirm you" in low and "bot" in low:
-        return ("YouTube is asking for bot verification on this network. "
-                "Try again later, try MP3/audio only, or update yt-dlp. "
-                "If it persists, exporting browser cookies usually fixes it.")
+        return ("YouTube is asking for bot verification on this network "
+                "(tried embedded/mobile/TV players and browser cookies). "
+                "Wait a few minutes and retry, try MP3/audio only, or update yt-dlp. "
+                "Staying signed in to YouTube in Chrome/Edge on this PC gives the best chance.")
     if "unsupported url" in low:
         return "This URL is not supported."
     if "private" in low:
@@ -82,22 +109,63 @@ def pick_media_file(files, format_choice):
     return video[0] if video else media[0]
 
 
+PLAYER_CLIENTS = ["web_embedded", "tv_embedded", "android", "ios", "tv", "web"]
+COOKIE_BROWSERS = ["chrome", "edge", "firefox", "brave", "opera"]
+_bot_blocks = {"count": 0, "first": 0.0}
+
+
+def _bot_blocked_recently(limit=10, window=600):
+    now = time.time()
+    if now - _bot_blocks["first"] > window:
+        _bot_blocks["count"] = 0
+        _bot_blocks["first"] = now
+    return _bot_blocks["count"] >= limit
+
+
+def _note_bot_block():
+    now = time.time()
+    if now - _bot_blocks["first"] > 600:
+        _bot_blocks["count"] = 0
+        _bot_blocks["first"] = now
+    _bot_blocks["count"] += 1
+
+
+def _is_bot_error(err):
+    low = str(err).lower()
+    return "sign in to confirm you" in low and "bot" in low
+
+
 def download_with_client_fallback(ydl_opts, url, job=None):
-    clients = [["android"], ["ios"], ["tv"], ["web"]]
-    last_err = None
-    for clients_set in clients:
-        opts = dict(ydl_opts)
-        opts["extractor_args"] = {"youtube": {"player_client": clients_set}}
-        try:
-            with yt_dlp.YoutubeDL(opts) as ydl:
-                ydl.download([url])
-            return
-        except Exception as e:
-            last_err = e
-            if job is not None:
-                job["progress"] = {"downloaded": 0, "total": 0, "speed": 0, "eta": 0}
-            continue
-    raise last_err
+    if _bot_blocked_recently():
+        raise RuntimeError(
+            "Too many YouTube bot-blocks in a row — waiting a few minutes "
+            "before retrying so the IP is not flagged further."
+        )
+    opts = dict(ydl_opts)
+    opts["extractor_args"] = {"youtube": {"player_client": list(PLAYER_CLIENTS)}}
+    try:
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            ydl.download([url])
+        return
+    except Exception as e:
+        if not _is_bot_error(e):
+            raise
+        _note_bot_block()
+        if job is not None:
+            job["progress"] = {"downloaded": 0, "total": 0, "speed": 0, "eta": 0}
+        last_err = e
+        for browser in COOKIE_BROWSERS:
+            try:
+                cookie_opts = dict(ydl_opts)
+                cookie_opts["extractor_args"] = {"youtube": {"player_client": list(PLAYER_CLIENTS)}}
+                cookie_opts["cookiesfrombrowser"] = (browser,)
+                with yt_dlp.YoutubeDL(cookie_opts) as ydl:
+                    ydl.download([url])
+                return
+            except Exception as be:
+                last_err = be
+                continue
+        raise last_err
 
 
 def load_history():
@@ -158,16 +226,32 @@ def run_download(job_id, url, format_choice, format_id, trim_start=None, trim_en
         "subtitlesformat": "srt/vtt/best",
         "extractor_args": {
             "youtube": {
-                "player_client": ["android"],
+                "player_client": list(PLAYER_CLIENTS),
             }
         },
         "concurrent_fragment_downloads": 4,
         "http_chunk_size": 10485760,
+        "retries": 3,
+        "fragment_retries": 3,
+        "skip_unavailable_fragments": True,
+        "socket_timeout": 30,
     }
     if merge_ext:
         ydl_opts["merge_output_format"] = merge_ext
     if trim_start and trim_end:
         ydl_opts["download_ranges"] = [{"start_time": trim_start, "end_time": trim_end}]
+
+    if not FFMPEG or not _ffmpeg_works(FFMPEG):
+        job["status"] = "error"
+        job["error"] = ("ffmpeg was not found, so video+audio cannot be merged. "
+                        "Reinstall ReClip or place ffmpeg.exe next to ReClip.exe, then retry.")
+        return
+
+    for stale in glob.glob(str(DOWNLOAD_DIR / f"{job_id}.*")):
+        try:
+            os.remove(stale)
+        except OSError:
+            pass
 
     try:
         download_with_client_fallback(ydl_opts, url, job)
@@ -231,6 +315,12 @@ def run_download(job_id, url, format_choice, format_id, trim_start=None, trim_en
     except Exception as e:
         job["status"] = "error"
         job["error"] = friendly_ydl_error(e)
+        for stale in glob.glob(str(DOWNLOAD_DIR / f"{job_id}.*")):
+            try:
+                if os.path.getsize(stale) < 1024:
+                    os.remove(stale)
+            except OSError:
+                pass
 
 
 @app.route("/")
