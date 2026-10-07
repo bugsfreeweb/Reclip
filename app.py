@@ -67,10 +67,16 @@ else:
     DOWNLOAD_DIR = Path("/tmp/reclip/downloads")
     HISTORY_FILE = Path("/tmp/reclip/history.json")
     TOOLS_DIR = str(BASE_DIR / "tools")
-    FFMPEG = _resolve_ffmpeg([
+    _web_candidates = [
         os.path.join(TOOLS_DIR, "ffmpeg.exe"),
         os.path.join(TOOLS_DIR, "ffmpeg"),
-    ]) or "ffmpeg"
+    ]
+    try:
+        import imageio_ffmpeg
+        _web_candidates.append(imageio_ffmpeg.get_ffmpeg_exe())
+    except Exception:
+        pass
+    FFMPEG = _resolve_ffmpeg(_web_candidates) or "ffmpeg"
 
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
