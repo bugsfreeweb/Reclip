@@ -1318,6 +1318,19 @@ window.addEventListener('drop',async e=>{
 });
 $$('.sample').forEach(b=>b.onclick=()=>{addLinks(b.dataset.u,true);urlBox.focus()});
 
+function openAbout(){
+  const m=document.getElementById('mAbout');
+  if(!m) return;
+  m.hidden=false;
+  requestAnimationFrame(()=>m.classList.add('in'));
+}
+function openDisclaimer(){
+  const m=document.getElementById('mDisclaimer');
+  if(!m) return;
+  m.hidden=false;
+  requestAnimationFrame(()=>m.classList.add('in'));
+}
+
 setTheme(S.theme);
 renderPresets();
 loadHistory().then(()=>{renderHistory();syncComposer()});
