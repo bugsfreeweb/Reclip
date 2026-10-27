@@ -767,16 +767,16 @@ function renderMarkers(it){
 }
 function qOptions(it){
   if(it.fmt==='mp3')
-    return[{value:'',label:'Best (320)'},{value:'',label:'192 kbps'},{value:'',label:'128 kbps'}];
-  const list=[{value:'',label:'Best'}];
-  for(const f of (it.formats||[])) list.push({value:f.id,label:fmtOptLabel(f)});
-  if(!list.length||list.length===1) for(const q of (it.qs||['1080p','720p','480p'])) list.push({value:'',label:q});
+    return[{value:'',label:'Best (320)',size:0},{value:'',label:'192 kbps',size:0},{value:'',label:'128 kbps',size:0}];
+  const list=[{value:'',label:'Best',size:0}];
+  for(const f of (it.formats||[])) list.push({value:f.id,label:fmtOptLabel(f),size:f.size||0});
+  if(!list.length||list.length===1) for(const q of (it.qs||['1080p','720p','480p'])) list.push({value:'',label:q,size:0});
   return list;
 }
 function renderSide(it){
   if(!it.$side)return;
   if(it.state==='idle'){
-   it.$side.innerHTML=`<div class="sel"><select>${qOptions(it).map((o,i)=>`<option value="${i}"${(it.qIndex||0)===i?' selected':''} data-fid="${esc(o.value)}">${esc(o.label)}</option>`).join('')}</select><i data-lucide="chevron-down"></i></div>
+   it.$side.innerHTML=`<div class="sel"><select>${qOptions(it).map((o,i)=>`<option value="${i}"${(it.qIndex||0)===i?' selected':''} data-fid="${esc(o.value)}" data-size="${o.size||0}">${esc(o.label)}</option>`).join('')}</select><i data-lucide="chevron-down"></i></div>
    <button class="btn primary sm" data-act="dl"><i data-lucide="download"></i>Download</button>`;
   }else if(it.state==='queued'){
    it.$side.innerHTML=`<div class="dl-wrap"><span class="dl-q">QUEUED</span><button class="icon-btn sm" data-act="cancel" title="Cancel"><i data-lucide="x"></i></button></div>`;
@@ -810,8 +810,14 @@ cardsEl.addEventListener('change',e=>{
   const opt=e.target.selectedOptions[0];
   it.qIndex=+e.target.value||0;
   it.formatId=opt?.dataset?.fid||null;
-  it.quality=opt?opt.textContent:'Best';
+  it.quality=opt?opt.textContent.split(' · ')[0]:it.quality;
+  it.size=opt?.dataset?.size ? +opt.dataset.size : (it.formatId?0:it.size);
   renderTags(it);syncBatchHead();
+  const side=it.$side;
+  if(side){
+    const doneSize=side.querySelector('.c-done-size');
+    if(doneSize) doneSize.textContent=`${fmtSize(it.size||0)} · ${it.fmt.toUpperCase()} · ${esc(resolveQ(it))}`;
+  }
 });
 
 async function doFetch(){

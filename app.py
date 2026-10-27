@@ -98,10 +98,10 @@ def friendly_ydl_error(err):
     msg = str(err)
     low = msg.lower()
     if "sign in to confirm you" in low and "bot" in low:
-        return ("YouTube is asking for bot verification on this network "
-                "(tried the default player, embedded/mobile/TV players and browser cookies). "
-                "Wait a few minutes and retry, try MP3/audio only, or update yt-dlp. "
-                "Staying signed in to YouTube in Chrome/Edge on this PC gives the best chance.")
+        return ("YouTube is asking for bot verification on this network. "
+                "For the best experience, download the Windows desktop app from "
+                "the GitHub releases page — it handles this more reliably. "
+                "Or wait a few minutes and retry, try MP3/audio only.")
     if "ffmpeg" in low and ("not installed" in low or "not found" in low or "merg" in low):
         return ("Video+audio merge needs ffmpeg, which ReClip could not find. "
                 "Reinstall ReClip (ffmpeg ships inside), or place ffmpeg.exe next to ReClip.exe, then retry. "
@@ -358,6 +358,11 @@ def run_download(job_id, url, format_choice, format_id, trim_start=None, trim_en
 @app.route("/")
 def index():
     return render_template("index.html", version=APP_VERSION)
+
+
+@app.route("/api/version")
+def version():
+    return jsonify({"version": APP_VERSION})
 
 
 @app.route("/static/<path:filename>")
